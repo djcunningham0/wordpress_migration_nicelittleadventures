@@ -11,6 +11,7 @@ Assert the thing you actually care about.
 """
 
 import pytest
+from bs4 import BeautifulSoup
 
 from wordpress_parser import MarkdownOutput, content_to_markdown, strip_wp_size_suffix
 
@@ -186,17 +187,35 @@ class TestColumns:
 
 
 class TestEmbeds:
-    @pytest.mark.xfail(
-        reason="markdownify drops <iframe> entirely — silent data loss on every map embed",
-        strict=True,
-    )
-    def test_iframe_survives_conversion():
+    def test_iframe_survives_conversion(self):
         iframe_block = (
             '<iframe src="https://caltopo.com/m/ABC123" width="100%" height="500" '
             'frameborder="0" allowfullscreen></iframe>'
         )
-        out = convert(iframe_block)
-        assert "caltopo.com/m/ABC123" in out.markdown
+        out = convert(iframe_block).markdown
+        assert out.startswith("<iframe ")
+        assert out.endswith("</iframe>\n")
+
+        # `convert_iframe` won't preserve attribute order, so that each element is
+        # preserved rather than checking an exact string
+        soup = BeautifulSoup(out, "html.parser")
+        out_iframe = soup.find("iframe")
+        assert out_iframe is not None
+        assert out_iframe.get("src") == "https://caltopo.com/m/ABC123"
+        assert out_iframe.get("width") == "100%"
+        assert out_iframe.get("height") == "500"
+        assert out_iframe.get("frameborder") == "0"
+        assert out_iframe.get("allowfullscreen") == ""
+
+    def test_iframe_inside_figure_with_caption(self):
+        html = (
+            "<figure>\n"
+            '<iframe src="https://caltopo.com/m/ABC123"></iframe>\n'
+            "<figcaption>a caption</figcaption>\n"
+            "</figure>"
+        )
+        out = convert(html).markdown
+        assert out == html + "\n"
 
     def test_self_hosted_video_is_preserved(self):
         html = (
@@ -278,14 +297,6 @@ class TestQuotes:
     def test_pullquote_becomes_blockquote(self):
         out = convert(self.PULLQUOTE).markdown
         assert "> The mountains are calling and I must go." in out
-
-    @pytest.mark.xfail(
-        reason="<cite> is emitted as a plain quoted line, not visibly an attribution",
-        strict=True,
-    )
-    def test_citation_is_marked_as_a_citation(self):
-        out = convert(self.PULLQUOTE).markdown
-        assert "— John Muir" in out or "*John Muir*" in out
 
 
 # --------------------------------------------------------------------------

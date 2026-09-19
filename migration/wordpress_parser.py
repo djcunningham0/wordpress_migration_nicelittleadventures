@@ -133,6 +133,9 @@ class WPMarkdownConverter(MarkdownConverter):
             return self._convert_youtube_embed(inner)
         return f"<figure>\n{inner}\n</figure>\n"
 
+    def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
+        return f"{el}\n"
+
     @staticmethod
     def _convert_youtube_embed(text: str):
         url = text.split("v=")[1].split("&")[0]
