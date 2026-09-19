@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Literal
 
 import mdformat
-from bs4 import BeautifulSoup
-from markdownify import markdownify as md
+from bs4 import BeautifulSoup, NavigableString, Tag
 from lxml import etree
+from markdownify import MarkdownConverter
+
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,79 @@ class Post:
 
     def __repr__(self):
         return f"Post(title={self.title}, id_={self.id_}, type={self.post_type}, author={self.author}, date={self.date})"
+
+
+class WPMarkdownConverter(MarkdownConverter):
+    """Converts WordPress block HTML to Markdown, keeping images/video as
+    raw HTML for figure/caption/column flexibility in Hugo."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.images: list[str] = []  # collected as a side effect of conversion
+        self.videos: list[str] = []
+
+    def convert_img(
+        self,
+        el: Tag,
+        text: str,
+        parent_tags: set,
+        override_src: str | None = None,
+    ) -> str:
+        src = override_src or el.get("src", "")
+        alt = el.get("alt", "")
+        if src:
+            self.images.append(src)
+        attrs = f'src="{src}"'
+        if alt:
+            attrs += f' alt="{alt}"'
+        return f"<img {attrs}/>\n"
+
+    def convert_video(self, el: Tag, text: str, parent_tags: set) -> str:
+        src = el.get("src", "")
+        if src:
+            self.videos.append(src)
+        attrs = f'src="{src}"'
+        if el.get("controls") is not None:
+            attrs = f"controls {attrs}"
+        if el.get("playsinline") is not None:
+            attrs += " playsinline"
+        return f"<video {attrs}></video>\n"
+
+    def convert_figcaption(self, el: Tag, text: str, parent_tags: set) -> str:
+        return f"<figcaption>{text.strip()}</figcaption>\n"
+
+    def convert_a(self, el: Tag, text: str, parent_tags: set) -> str:
+        children = [
+            c
+            for c in el.children
+            if not (isinstance(c, NavigableString) and not c.strip())
+        ]
+
+        # Self-linking image: <a href="..."><img/></a> with nothing else inside.
+        # Use the href image rather than the src value from the <img> tag. (Convention:
+        # the images on my Wordpress site link to full-res versions of themselves.))
+        if len(children) == 1 and children[0].name == "img":
+            return self.convert_img(
+                children[0], "", parent_tags, override_src=el.get("href")
+            )
+        return super().convert_a(el, text, parent_tags)
+
+    def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
+        print(f"{el=}")
+        inner = text.strip("\n")
+        print(f"{el.get("class")=}")
+        if "is-provider-youtube" in el.get("class", []):
+            return self._convert_youtube_embed(inner)
+        return f"<figure>\n{inner}\n</figure>\n"
+
+    def _convert_youtube_embed(self, text: str):
+        print("here")
+        url = text.split("v=")[1].split("&")[0]
+        return f"{{{{< youtube {url} >}}}}"
+
+
+def convert(html: str) -> str:
+    return WPMarkdownConverter(**MARKDOWNIFY_ARGS).convert(html).strip()
 
 
 def parse_wordpress_xml(xml_path: Path, skip_ids: list[str] = None) -> list[Post]:
@@ -158,7 +232,7 @@ def resolve_footnotes(markdown: str, footnotes: list[dict]) -> str:
     definitions = []
     for n, fn_id in enumerate(order, start=1):
         content_html = footnotes_by_id.get(fn_id, "")
-        content_md = md(content_html, **MARKDOWNIFY_ARGS).strip()
+        content_md = convert(content_html)
         definitions.append(f"[^{n}]: {content_md}")
 
     return body + "\n\n" + "\n".join(definitions)
@@ -171,7 +245,7 @@ def content_to_markdown(html_content: str, footnotes_json: list[dict[str, str]])
         return ""
 
     html_content = replace_footnote_markers_with_placeholders(html_content)
-    markdown = md(html_content, **MARKDOWNIFY_ARGS).strip()
+    markdown = convert(html_content)
     markdown = resolve_footnotes(markdown, footnotes_json)
 
     # prettify markdown

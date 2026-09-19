@@ -63,62 +63,57 @@ class TestBasics:
 # --------------------------------------------------------------------------
 
 
-SELF_LINKING_IMAGE = (
-    '<figure class="wp-block-image size-large">'
-    '<a href="https://example.com/wp-content/uploads/2023/08/ridge.jpg">'
-    '<img src="https://example.com/wp-content/uploads/2023/08/ridge-1024x768.jpg" '
-    "</figure>"
-)
-
-
 class TestImages:
-    @pytest.mark.xfail()
     def test_image_converts_to_html_and_strips_class(self):
         html = (
             '<figure class="wp-block-image size-full">'
             '<img src="https://example.com/a.jpg" class="wp-image-202"/>'
             "</figure>"
         )
-        out = convert(html).strip()
-        assert out == ('<figure>\n<img src="https://example.com/a.jpg"/>\n</figure>')
+        out = convert(html)
+        assert out == ('<figure>\n<img src="https://example.com/a.jpg"/>\n</figure>\n')
 
-    @pytest.mark.xfail()
     def test_alt_text_is_preserved(self):
         html = (
             '<figure class="wp-block-image size-full">'
             '<img src="https://example.com/a.jpg" alt="Alt text" class="wp-image-202"/>'
             "</figure>"
         )
-        out = convert(html).strip()
+        out = convert(html)
         assert out == (
-            '<figure>\n<img src="https://example.com/a.jpg" alt="Alt text"/>\n</figure>'
+            '<figure>\n<img src="https://example.com/a.jpg" alt="Alt text"/>\n</figure>\n'
         )
 
-    @pytest.mark.xfail()
     def test_image_keeps_caption(self):
         html = (
             '<figure class="wp-block-image size-full">'
             '<img src="https://example.com/a.jpg" class="wp-image-202"/>'
             '<figcaption class="wp-element-caption">A caption.</figcaption>'
-            "</figure>"
+            "</figure>\n"
         )
-        out = convert(html).strip()
+        out = convert(html)
         assert out == (
             "<figure>\n"
             '<img src="https://example.com/a.jpg"/>\n'
             "<figcaption>A caption.</figcaption>\n"
-            "</figure>"
+            "</figure>\n"
         )
 
-    @pytest.mark.xfail()
     def test_self_linking_image_removes_link(self):
-        """Pull the href image."""
-        out = convert(SELF_LINKING_IMAGE)
-        assert out == (
-            "<figure>\n"
+        """Pull the href image only."""
+        self_linking_image = (
+            '<figure class="wp-block-image size-large">'
+            '<a href="https://example.com/wp-content/uploads/2023/08/ridge.jpg">'
             '<img src="https://example.com/wp-content/uploads/2023/08/ridge-1024x768.jpg" '
             "</figure>"
         )
+        out = convert(self_linking_image)
+        expected = (
+            "<figure>\n"
+            '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg"/>\n'
+            "</figure>\n"
+        )
+        assert out == expected
 
 
 # --------------------------------------------------------------------------
@@ -166,10 +161,6 @@ class TestEmbeds:
         out = convert(iframe_block)
         assert "caltopo.com/m/ABC123" in out
 
-    @pytest.mark.xfail(
-        reason="<video> becomes an empty link: [](url)",
-        strict=True,
-    )
     def test_self_hosted_video_is_preserved(self):
         html = (
             '<figure class="wp-block-video">'
@@ -183,9 +174,7 @@ class TestEmbeds:
             "</figure>"
         )
 
-    @pytest.mark.xfail()
     def test_youtube_embed_is_converted_to_hugo_shortcode(self):
-        """The oEmbed block is a bare URL in a wrapper div; at minimum the URL must remain."""
         html = (
             '<figure class="wp-block-embed is-provider-youtube">'
             '<div class="wp-block-embed__wrapper">\n'
@@ -234,24 +223,23 @@ class TestTables:
 # --------------------------------------------------------------------------
 
 
-PULLQUOTE = (
-    '<figure class="wp-block-pullquote"><blockquote>'
-    "<p>The mountains are calling and I must go.</p>"
-    "<cite>John Muir</cite></blockquote></figure>"
-)
-
-BLOCKQUOTE = (
-    '<blockquote class="wp-block-quote"><p>A regular block quote.</p></blockquote>'
-)
-
-
 class TestQuotes:
+    PULLQUOTE = (
+        '<figure class="wp-block-pullquote"><blockquote>'
+        "<p>The mountains are calling and I must go.</p>"
+        "<cite>John Muir</cite></blockquote></figure>"
+    )
+
+    BLOCKQUOTE = (
+        '<blockquote class="wp-block-quote"><p>A regular block quote.</p></blockquote>'
+    )
+
     def test_blockquote(self):
-        out = convert(BLOCKQUOTE)
+        out = convert(self.BLOCKQUOTE)
         assert "> A regular block quote." in out
 
     def test_pullquote_becomes_blockquote(self):
-        out = convert(PULLQUOTE)
+        out = convert(self.PULLQUOTE)
         assert "> The mountains are calling and I must go." in out
 
     @pytest.mark.xfail(
@@ -259,7 +247,7 @@ class TestQuotes:
         strict=True,
     )
     def test_citation_is_marked_as_a_citation(self):
-        out = convert(PULLQUOTE)
+        out = convert(self.PULLQUOTE)
         assert "— John Muir" in out or "*John Muir*" in out
 
 
