@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 from lxml import etree
 from markdownify import MarkdownConverter
 
-import config
+from config import AUTHOR_OVERRIDES
 
 
 logger = logging.getLogger(__name__)
@@ -254,7 +254,7 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
 
 def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:
     """Parse the author(s) from a WordPress XML item."""
-    overrides = config.AUTHOR_OVERRIDES
+    overrides = AUTHOR_OVERRIDES
     authors: list[str] = [x.text for x in item.findall("category[@domain='author']")]
     if not authors:
         # fallback to dc:creator

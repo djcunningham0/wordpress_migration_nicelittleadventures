@@ -46,8 +46,7 @@ def posts_by_id(posts) -> dict[str, wp.Post]:
 
 @pytest.fixture
 def no_author_overrides(monkeypatch):
-    """_parse_authors reads AUTHOR_OVERRIDES from the environment at call time.
-
-    Without this, a stray env var in a dev shell silently changes test results.
+    """Disable author overrides for tests; otherwise we may get unexpected failures if
+    overrides happen to appear in test data.
     """
-    monkeypatch.delenv("AUTHOR_OVERRIDES", raising=False)
+    monkeypatch.setattr("config.XML_PATH", {})

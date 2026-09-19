@@ -4,15 +4,12 @@ import os
 import shutil
 from pathlib import Path
 
-from dotenv import load_dotenv
 from lxml import etree
 
 import config
 from wordpress_parser import parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
-
-load_dotenv()
 
 
 def migrate(

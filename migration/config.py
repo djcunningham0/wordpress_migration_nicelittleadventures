@@ -1,5 +1,15 @@
-XML_PATH = "wp_migration_files/nicelittleadventures.WordPress.2026-09-19.xml"
+import os
+import warnings
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+XML_PATH = os.getenv("XML_PATH")
 HUGO_TARGET_DIR = ".."
+
+if XML_PATH is None:
+    warnings.warn("XML_PATH is not set in `.env`")
 
 SITE_URL = "https://nicelittleadventures.com"
 

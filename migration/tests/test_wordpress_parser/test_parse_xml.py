@@ -99,8 +99,9 @@ class TestAuthors:
         assert posts_by_id["103"].author == "danny"
 
     def test_author_overrides_applied(self, xml_path, monkeypatch):
-        monkeypatch.setenv(
-            "AUTHOR_OVERRIDES", json.dumps({"Danny": "Danny C", "danny": "Danny C"})
+        monkeypatch.setattr(
+            "wordpress_parser.AUTHOR_OVERRIDES",
+            {"Danny": "Danny C", "danny": "Danny C"},
         )
         posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
         assert posts["102"].author == "Danny C"
