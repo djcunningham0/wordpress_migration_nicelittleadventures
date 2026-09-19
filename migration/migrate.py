@@ -1,18 +1,55 @@
+import argparse
 import logging
 import os
+import shutil
 from pathlib import Path
 
 from dotenv import load_dotenv
 from lxml import etree
+
+from wordpress_parser import parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 
-def migrate(xml_name: str = None, target_dir_name: str = None):
+def migrate(
+    xml_name: str = None,
+    target_dir_name: str = None,
+    overwrite_individual: bool = True,
+    full_rebuild: bool = False,
+):
     xml_path, target_dir = parse_paths(xml_name, target_dir_name)
-    tree = parse_xml_file(xml_path)
+    skip_ids = [x.strip() for x in os.getenv("SKIP_IDS", "").split(",")]
+    logger.info(f"Skipping posts with IDs: {skip_ids}")
+    posts = parse_wordpress_xml(xml_path, skip_ids=skip_ids)
+    logger.info(f"Parsed {len(posts):,} posts from {xml_path}")
+
+    content_path = target_dir / "content"
+    logger.info(f"Writing posts to {content_path}")
+    if full_rebuild and content_path.exists():
+        logger.info(
+            f"Full rebuild requested; deleting existing content directory {content_path}"
+        )
+        shutil.rmtree(content_path)
+
+    for post in posts:
+        if post.post_type == "post":
+            post_dir = content_path / "posts" / post.slug
+        elif post.post_type == "page":
+            post_dir = content_path / post.slug
+        else:
+            raise ValueError(f"Unknown post type: {post.post_type}")
+
+        os.makedirs(post_dir, exist_ok=True)
+        post_file_path = post_dir / "index.md"
+        if post_file_path.exists() and not overwrite_individual:
+            logger.info(f"Skipping existing file: {post_file_path}")
+            continue
+        with open(post_file_path, "w", encoding="utf-8") as f:
+            f.write(post.markdown)
+        logger.info(f"Wrote {post_file_path}")
 
 
 def parse_paths(xml_name: str = None, target_dir_name: str = None) -> tuple[Path, Path]:
@@ -47,4 +84,28 @@ def parse_xml_file(xml_path: Path) -> etree._ElementTree:
 
 
 if __name__ == "__main__":
-    migrate()
+    parser = argparse.ArgumentParser(description="Migrate WordPress XML to static site")
+    parser.add_argument("--xml", help="Path to WordPress XML file")
+    parser.add_argument("--target", help="Target directory for migrated content")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        default=True,
+        help="Overwrite existing files",
+    )
+    parser.add_argument(
+        "--full-rebuild", action="store_true", help="Perform full rebuild"
+    )
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+
+    args = parser.parse_args()
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=log_level)
+
+    migrate(
+        xml_name=args.xml,
+        target_dir_name=args.target,
+        overwrite_individual=args.overwrite,
+        full_rebuild=args.full_rebuild,
+    )
