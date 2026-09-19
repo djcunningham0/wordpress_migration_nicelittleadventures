@@ -37,7 +37,7 @@ FOOTNOTE_PLACEHOLDER_RE = re.compile(
 @dataclass
 class Post:
     post_type: Literal["post", "page"]
-    status: Literal["publish", "draft", "pending"]
+    status: Literal["publish", "draft", "pending", "trash"]
     title: str
     id_: str
     slug: str
@@ -137,10 +137,6 @@ class WPMarkdownConverter(MarkdownConverter):
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
-
-    def convert_div(self, el: Tag, text: str, parent_tags: set) -> str:
-        """Keep the custom div classes that are necessary for formatting."""
-
 
     @staticmethod
     def _convert_youtube_embed(text: str):
