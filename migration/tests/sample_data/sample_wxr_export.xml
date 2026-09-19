@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Representative WordPress WXR fixture for parser unit tests.
+
+  Coverage map (by wp:post_id):
+    101  Multi-author post (danny + siyang), author-* divs, featured image
+         (_thumbnail_id -> 201), self-linking images, columns WITH explicit
+         widths, one footnote, custom excerpt (subtitle + excerpt).
+    102  Single author: iframe in wp:html, self-hosted video, YouTube embed,
+         standalone image, columns WITHOUT explicit widths.
+    103  Minimal DRAFT: no author category (dc:creator fallback), no
+         categories/tags/footnotes, empty post_name, empty excerpt.
+    104  _thumbnail_id points at a MISSING attachment (250). status=pending.
+    105  Footnote-heavy post: 3 markers, one id referenced TWICE, one marker
+         whose id is absent from the footnotes JSON, and JSON ordered
+         differently from appearance order.
+    106  Table post (wp:table with thead/tbody + caption), plus a list.
+    5    Page: pull quote, block quote, custom excerpt. post_type=page.
+    201  Attachment: featured image for post 101.
+    202  Attachment: in-content image + featured image for 102 (appears AFTER
+         the post that references it, on purpose).
+    203  Attachment: column image.
+    204  Attachment: column image.
+    210  Attachment: self-hosted video (mp4).
+-->
+<rss version="2.0"
+    xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+    xmlns:content="http://purl.org/rss/1.0/modules/content/"
+    xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+    <title>Example Blog</title>
+    <link>https://example.com</link>
+    <description>A sample export for testing</description>
+    <pubDate>Fri, 18 Sep 2026 12:00:00 +0000</pubDate>
+    <language>en-US</language>
+    <wp:wxr_version>1.2</wp:wxr_version>
+    <wp:base_site_url>https://example.com</wp:base_site_url>
+    <wp:base_blog_url>https://example.com</wp:base_blog_url>
+
+    <wp:author>
+        <wp:author_id>1</wp:author_id>
+        <wp:author_login><![CDATA[danny]]></wp:author_login>
+        <wp:author_email><![CDATA[danny@example.com]]></wp:author_email>
+        <wp:author_display_name><![CDATA[Danny]]></wp:author_display_name>
+        <wp:author_first_name><![CDATA[Danny]]></wp:author_first_name>
+        <wp:author_last_name><![CDATA[]]></wp:author_last_name>
+    </wp:author>
+    <wp:author>
+        <wp:author_id>2</wp:author_id>
+        <wp:author_login><![CDATA[siyang]]></wp:author_login>
+        <wp:author_email><![CDATA[siyang@example.com]]></wp:author_email>
+        <wp:author_display_name><![CDATA[Siyang]]></wp:author_display_name>
+        <wp:author_first_name><![CDATA[Siyang]]></wp:author_first_name>
+        <wp:author_last_name><![CDATA[]]></wp:author_last_name>
+    </wp:author>
+
+    <wp:category>
+        <wp:term_id>3</wp:term_id>
+        <wp:category_nicename><![CDATA[hiking]]></wp:category_nicename>
+        <wp:category_parent><![CDATA[]]></wp:category_parent>
+        <wp:cat_name><![CDATA[Hiking]]></wp:cat_name>
+    </wp:category>
+    <wp:tag>
+        <wp:term_id>12</wp:term_id>
+        <wp:tag_slug><![CDATA[idaho]]></wp:tag_slug>
+        <wp:tag_name><![CDATA[Idaho]]></wp:tag_name>
+    </wp:tag>
+
+    <!-- =====================================================================
+         101: Multi-author. Featured image, author-* divs, self-linking
+         images, columns with EXPLICIT widths, custom excerpt, 1 footnote.
+         ================================================================== -->
+    <item>
+        <title>Sawtooth Traverse Part 1: Hiking the Sawtooth High Route</title>
+        <link>https://example.com/sawtooth-traverse-part-1/</link>
+        <pubDate>Mon, 14 Aug 2023 15:30:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <category domain="category" nicename="hiking"><![CDATA[Hiking]]></category>
+        <category domain="category" nicename="trip-reports"><![CDATA[Trip Reports]]></category>
+        <category domain="post_tag" nicename="idaho"><![CDATA[Idaho]]></category>
+        <category domain="post_tag" nicename="sawtooths"><![CDATA[Sawtooths]]></category>
+        <category domain="author" nicename="danny"><![CDATA[Danny]]></category>
+        <category domain="author" nicename="siyang"><![CDATA[Siyang]]></category>
+        <guid isPermaLink="false">https://example.com/?p=101</guid>
+        <description></description>
+        <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>We started at Iron Creek trailhead just after sunrise.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:html -->
+<div class="author-danny">
+<p>I had been eyeing this route for about three years. The approach looked
+straightforward on paper, which should have been the first warning sign.</p>
+</div>
+<!-- /wp:html -->
+
+<!-- wp:html -->
+<div class="author-siyang">
+<p>Danny neglected to mention that "straightforward on paper" meant nine hours
+of talus. I want that on the record.</p>
+</div>
+<!-- /wp:html -->
+
+<!-- wp:image {"id":203,"sizeSlug":"large","linkDestination":"media"} -->
+<figure class="wp-block-image size-large"><a href="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg"><img src="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge-1024x768.jpg" alt="Ridgeline at dawn" class="wp-image-203"/></a><figcaption class="wp-element-caption">The ridge at first light.</figcaption></figure>
+<!-- /wp:image -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column {"width":"66.66%"} -->
+<div class="wp-block-column" style="flex-basis:66.66%">
+<!-- wp:image {"id":203,"sizeSlug":"large","linkDestination":"media"} -->
+<figure class="wp-block-image size-large"><a href="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg"><img src="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge-1024x768.jpg" alt="" class="wp-image-203"/></a></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column {"width":"33.33%"} -->
+<div class="wp-block-column" style="flex-basis:33.33%">
+<!-- wp:image {"id":204,"sizeSlug":"large","linkDestination":"media"} -->
+<figure class="wp-block-image size-large"><a href="https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg"><img src="https://example.com/wp-content/uploads/2023/08/alpine-lake-768x1024.jpg" alt="Alpine lake" class="wp-image-204"/></a><figcaption class="wp-element-caption">Camp two.</figcaption></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:paragraph -->
+<p>The high route proper begins above the last of the trees.<sup data-fn="a1b2c3d4" class="fn"><a href="#a1b2c3d4" id="a1b2c3d4-link">1</a></sup></p>
+<!-- /wp:paragraph -->
+]]></content:encoded>
+        <excerpt:encoded><![CDATA[<hr>
+<h5 class="page-description"><i>
+Nine hours of talus, one very good alpine lake
+</i></h5>
+<p>
+A three-day traverse of the Sawtooth High Route, from Iron Creek to
+Redfish Lake.
+</p>]]></excerpt:encoded>
+        <wp:post_id>101</wp:post_id>
+        <wp:post_date><![CDATA[2023-08-14 15:30:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2023-08-14 15:30:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2023-08-20 11:02:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[open]]></wp:comment_status>
+        <wp:ping_status><![CDATA[open]]></wp:ping_status>
+        <wp:post_name><![CDATA[sawtooth-traverse-part-1]]></wp:post_name>
+        <wp:status><![CDATA[publish]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_thumbnail_id]]></wp:meta_key>
+            <wp:meta_value><![CDATA[201]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[footnotes]]></wp:meta_key>
+            <wp:meta_value><![CDATA[[{"content":"The route is unmaintained above 9,000 ft.","id":"a1b2c3d4"}]]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- 201: Featured image attachment for post 101 -->
+    <item>
+        <title>sawtooth-hero</title>
+        <link>https://example.com/sawtooth-traverse-part-1/sawtooth-hero/</link>
+        <pubDate>Mon, 14 Aug 2023 15:20:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/wp-content/uploads/2023/08/sawtooth-hero.jpg</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>201</wp:post_id>
+        <wp:post_date><![CDATA[2023-08-14 15:20:00]]></wp:post_date>
+        <wp:post_name><![CDATA[sawtooth-hero]]></wp:post_name>
+        <wp:status><![CDATA[inherit]]></wp:status>
+        <wp:post_parent>101</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[attachment]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:attachment_url><![CDATA[https://example.com/wp-content/uploads/2023/08/sawtooth-hero.jpg]]></wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[2023/08/sawtooth-hero.jpg]]></wp:meta_value>
+        </wp:postmeta>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attachment_image_alt]]></wp:meta_key>
+            <wp:meta_value><![CDATA[Sawtooth range at sunrise]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- 203: column + inline image attachment -->
+    <item>
+        <title>sawtooth-ridge</title>
+        <link>https://example.com/sawtooth-traverse-part-1/sawtooth-ridge/</link>
+        <pubDate>Mon, 14 Aug 2023 15:21:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>203</wp:post_id>
+        <wp:post_date><![CDATA[2023-08-14 15:21:00]]></wp:post_date>
+        <wp:post_name><![CDATA[sawtooth-ridge]]></wp:post_name>
+        <wp:status><![CDATA[inherit]]></wp:status>
+        <wp:post_parent>101</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[attachment]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:attachment_url><![CDATA[https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg]]></wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[2023/08/sawtooth-ridge.jpg]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- 204: column image attachment -->
+    <item>
+        <title>alpine-lake</title>
+        <link>https://example.com/sawtooth-traverse-part-1/alpine-lake/</link>
+        <pubDate>Mon, 14 Aug 2023 15:22:00 +0000</pubDate>
+        <dc:creator><![CDATA[siyang]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>204</wp:post_id>
+        <wp:post_date><![CDATA[2023-08-14 15:22:00]]></wp:post_date>
+        <wp:post_name><![CDATA[alpine-lake]]></wp:post_name>
+        <wp:status><![CDATA[inherit]]></wp:status>
+        <wp:post_parent>101</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[attachment]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:attachment_url><![CDATA[https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg]]></wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[2023/08/alpine-lake.jpg]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- =====================================================================
+         102: iframe in wp:html, self-hosted video, YouTube embed, standalone
+         image, columns WITHOUT explicit widths.
+         ================================================================== -->
+    <item>
+        <title>Gear Notes and a Route Flyover</title>
+        <link>https://example.com/gear-notes-route-flyover/</link>
+        <pubDate>Thu, 07 Sep 2023 09:15:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <category domain="category" nicename="hiking"><![CDATA[Hiking]]></category>
+        <category domain="post_tag" nicename="gear"><![CDATA[Gear]]></category>
+        <category domain="author" nicename="danny"><![CDATA[Danny]]></category>
+        <guid isPermaLink="false">https://example.com/?p=102</guid>
+        <description></description>
+        <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>A few people asked what we carried, so here it is.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:html -->
+<iframe src="https://caltopo.com/m/ABC123" width="100%" height="500" frameborder="0" allowfullscreen></iframe>
+<!-- /wp:html -->
+
+<!-- wp:html -->
+<div class="route-table">
+<iframe title="Elevation profile" src="https://example.com/embeds/profile.html" width="640" height="360" loading="lazy"></iframe>
+</div>
+<!-- /wp:html -->
+
+<!-- wp:video {"id":210} -->
+<figure class="wp-block-video"><video controls src="https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4"></video><figcaption class="wp-element-caption">Flyover of the traverse.</figcaption></figure>
+<!-- /wp:video -->
+
+<!-- wp:embed {"url":"https://www.youtube.com/watch?v=aqz-KE-bpKQ","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-16-9 wp-has-aspect-ratio"} -->
+<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-16-9 wp-has-aspect-ratio"><div class="wp-block-embed__wrapper">
+https://www.youtube.com/watch?v=aqz-KE-bpKQ
+</div></figure>
+<!-- /wp:embed -->
+
+<!-- wp:image {"id":202,"sizeSlug":"full","linkDestination":"none"} -->
+<figure class="wp-block-image size-full"><img src="https://example.com/wp-content/uploads/2023/09/pack-layout.jpg" alt="Everything laid out on the floor" class="wp-image-202"/><figcaption class="wp-element-caption">The whole kit, pre-packing.</figcaption></figure>
+<!-- /wp:image -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:image {"id":203,"sizeSlug":"large","linkDestination":"media"} -->
+<figure class="wp-block-image size-large"><a href="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg"><img src="https://example.com/wp-content/uploads/2023/08/sawtooth-ridge-1024x768.jpg" alt="" class="wp-image-203"/></a></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:image {"id":204,"sizeSlug":"large","linkDestination":"media"} -->
+<figure class="wp-block-image size-large"><a href="https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg"><img src="https://example.com/wp-content/uploads/2023/08/alpine-lake-768x1024.jpg" alt="" class="wp-image-204"/></a></figure>
+<!-- /wp:image -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:paragraph -->
+<p>Left: the ridge. Middle: camp two. This column is text, not an image.</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+]]></content:encoded>
+        <excerpt:encoded><![CDATA[<p>
+What we carried, plus a flyover of the route.
+</p>]]></excerpt:encoded>
+        <wp:post_id>102</wp:post_id>
+        <wp:post_date><![CDATA[2023-09-07 09:15:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2023-09-07 09:15:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2023-09-07 09:15:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[open]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[gear-notes-route-flyover]]></wp:post_name>
+        <wp:status><![CDATA[publish]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_thumbnail_id]]></wp:meta_key>
+            <wp:meta_value><![CDATA[202]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- 202: attachment referenced by post 102, deliberately placed AFTER it -->
+    <item>
+        <title>pack-layout</title>
+        <link>https://example.com/gear-notes-route-flyover/pack-layout/</link>
+        <pubDate>Thu, 07 Sep 2023 09:10:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/wp-content/uploads/2023/09/pack-layout.jpg</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>202</wp:post_id>
+        <wp:post_date><![CDATA[2023-09-07 09:10:00]]></wp:post_date>
+        <wp:post_name><![CDATA[pack-layout]]></wp:post_name>
+        <wp:status><![CDATA[inherit]]></wp:status>
+        <wp:post_parent>102</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[attachment]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:attachment_url><![CDATA[https://example.com/wp-content/uploads/2023/09/pack-layout.jpg]]></wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[2023/09/pack-layout.jpg]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- 210: self-hosted video attachment -->
+    <item>
+        <title>ridge-flyover</title>
+        <link>https://example.com/gear-notes-route-flyover/ridge-flyover/</link>
+        <pubDate>Thu, 07 Sep 2023 09:12:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4</guid>
+        <description></description>
+        <content:encoded><![CDATA[]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>210</wp:post_id>
+        <wp:post_date><![CDATA[2023-09-07 09:12:00]]></wp:post_date>
+        <wp:post_name><![CDATA[ridge-flyover]]></wp:post_name>
+        <wp:status><![CDATA[inherit]]></wp:status>
+        <wp:post_parent>102</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[attachment]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:attachment_url><![CDATA[https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4]]></wp:attachment_url>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_wp_attached_file]]></wp:meta_key>
+            <wp:meta_value><![CDATA[2023/09/ridge-flyover.mp4]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- =====================================================================
+         103: Minimal DRAFT. No author category -> dc:creator fallback.
+         ================================================================== -->
+    <item>
+        <title>Untitled Draft</title>
+        <link>https://example.com/?p=103</link>
+        <pubDate>Tue, 13 Feb 2024 09:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <guid isPermaLink="false">https://example.com/?p=103</guid>
+        <description></description>
+        <content:encoded><![CDATA[<!-- wp:paragraph -->
+<p>Just a quick draft with no metadata.</p>
+<!-- /wp:paragraph -->]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>103</wp:post_id>
+        <wp:post_date><![CDATA[2024-02-13 09:00:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[0000-00-00 00:00:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2024-02-13 09:00:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[closed]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[]]></wp:post_name>
+        <wp:status><![CDATA[draft]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+    </item>
+
+    <!-- =====================================================================
+         104: dangling _thumbnail_id (250), status=pending.
+         ================================================================== -->
+    <item>
+        <title>Post With a Dangling Thumbnail</title>
+        <link>https://example.com/dangling-thumbnail/</link>
+        <pubDate>Sat, 02 Mar 2024 12:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[siyang]]></dc:creator>
+        <category domain="category" nicename="hiking"><![CDATA[Hiking]]></category>
+        <category domain="author" nicename="siyang"><![CDATA[Siyang]]></category>
+        <guid isPermaLink="false">https://example.com/?p=104</guid>
+        <description></description>
+        <content:encoded><![CDATA[<!-- wp:paragraph -->
+<p>The featured image for this post was deleted from the media library.</p>
+<!-- /wp:paragraph -->]]></content:encoded>
+        <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+        <wp:post_id>104</wp:post_id>
+        <wp:post_date><![CDATA[2024-03-02 12:00:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2024-03-02 12:00:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2024-03-02 12:00:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[closed]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[dangling-thumbnail]]></wp:post_name>
+        <wp:status><![CDATA[pending]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[_thumbnail_id]]></wp:meta_key>
+            <wp:meta_value><![CDATA[250]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- =====================================================================
+         105: Footnote-heavy post.
+           - marker "c0ffee01" appears once
+           - marker "deadbeef" appears once
+           - marker "00000000" has NO matching entry in the JSON
+           - JSON lists deadbeef BEFORE c0ffee01, but c0ffee01 appears first
+             in the body, so numbering must follow appearance order
+           - footnote content contains inline HTML (a link + emphasis)
+         ================================================================== -->
+    <item>
+        <title>Pfiffner Traverse: Notes from 500 Miles</title>
+        <link>https://example.com/pfiffner-traverse/</link>
+        <pubDate>Sun, 12 May 2024 08:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <category domain="category" nicename="hiking"><![CDATA[Hiking]]></category>
+        <category domain="category" nicename="trip-reports"><![CDATA[Trip Reports]]></category>
+        <category domain="post_tag" nicename="colorado"><![CDATA[Colorado]]></category>
+        <category domain="author" nicename="danny"><![CDATA[Danny]]></category>
+        <guid isPermaLink="false">https://example.com/?p=105</guid>
+        <description></description>
+        <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>The Pfiffner Traverse runs the spine of the Continental Divide through the Front Range.<sup data-fn="c0ffee01" class="fn"><a href="#c0ffee01" id="c0ffee01-link">1</a></sup></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Most of it is off-trail. Route-finding above treeline is the whole game.<sup data-fn="deadbeef" class="fn"><a href="#deadbeef" id="deadbeef-link">2</a></sup></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>I bailed at Monarch Pass, same as the first attempt. Weather, mostly.<sup data-fn="00000000" class="fn"><a href="#00000000" id="00000000-link">3</a></sup></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading">What I would change</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item -->
+<li>Start two weeks later.</li>
+<!-- /wp:list-item -->
+<!-- wp:list-item -->
+<li>Carry an ice axe through the first section.</li>
+<!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+]]></content:encoded>
+        <excerpt:encoded><![CDATA[<hr>
+<h5 class="page-description"><i>
+Five hundred miles, two bail-outs, one ice axe I should have brought
+</i></h5>
+<p>
+Notes from two attempts at Andrew Skurka's Pfiffner Traverse.
+</p>]]></excerpt:encoded>
+        <wp:post_id>105</wp:post_id>
+        <wp:post_date><![CDATA[2024-05-12 08:00:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2024-05-12 08:00:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2024-05-12 08:00:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[open]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[pfiffner-traverse]]></wp:post_name>
+        <wp:status><![CDATA[publish]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+        <wp:postmeta>
+            <wp:meta_key><![CDATA[footnotes]]></wp:meta_key>
+            <wp:meta_value><![CDATA[[{"content":"Footnote two.","id":"deadbeef"},{"content":"Footnote one. With <a href=\"https://example.com/history\">a link</a>.","id":"c0ffee01"}]]]></wp:meta_value>
+        </wp:postmeta>
+    </item>
+
+    <!-- =====================================================================
+         106: Table post.
+         ================================================================== -->
+    <item>
+        <title>DIY Electrolyte Mix</title>
+        <link>https://example.com/diy-electrolyte-mix/</link>
+        <pubDate>Wed, 19 Jun 2024 17:45:00 +0000</pubDate>
+        <dc:creator><![CDATA[siyang]]></dc:creator>
+        <category domain="category" nicename="gear"><![CDATA[Gear]]></category>
+        <category domain="post_tag" nicename="nutrition"><![CDATA[Nutrition]]></category>
+        <category domain="author" nicename="siyang"><![CDATA[Siyang]]></category>
+        <guid isPermaLink="false">https://example.com/?p=106</guid>
+        <description></description>
+        <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>Commercial mixes are mostly sugar and markup. This is what I make instead.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Ingredient</th><th>Amount</th><th>Provides</th></tr></thead><tbody><tr><td>Table salt</td><td>1/4 tsp</td><td>~590 mg sodium</td></tr><tr><td>Lite salt</td><td>1/4 tsp</td><td>~350 mg potassium</td></tr><tr><td>Sugar</td><td>2 tbsp</td><td>Carbs, aids absorption</td></tr><tr><td>Lemon juice</td><td>1 tbsp</td><td>Flavor</td></tr></tbody></table><figcaption class="wp-element-caption">Per 1 liter of water.</figcaption></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Mix it the night before. It tastes better cold.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":true,"className":"is-style-stripes"} -->
+<figure class="wp-block-table is-style-stripes"><table class="has-fixed-layout"><tbody><tr><td>No header row</td><td>on this one</td></tr><tr><td>Just</td><td>body cells</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+]]></content:encoded>
+        <excerpt:encoded><![CDATA[<p>
+Four ingredients, about eleven cents a liter.
+</p>]]></excerpt:encoded>
+        <wp:post_id>106</wp:post_id>
+        <wp:post_date><![CDATA[2024-06-19 17:45:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2024-06-19 17:45:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2024-06-19 17:45:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[open]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[diy-electrolyte-mix]]></wp:post_name>
+        <wp:status><![CDATA[publish]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[post]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+    </item>
+
+    <!-- =====================================================================
+         5: Page with a pull quote and a block quote.
+         ================================================================== -->
+    <item>
+        <title>About</title>
+        <link>https://example.com/about/</link>
+        <pubDate>Wed, 01 Jan 2020 00:00:00 +0000</pubDate>
+        <dc:creator><![CDATA[danny]]></dc:creator>
+        <category domain="author" nicename="danny"><![CDATA[Danny]]></category>
+        <category domain="author" nicename="siyang"><![CDATA[Siyang]]></category>
+        <guid isPermaLink="false">https://example.com/?page_id=5</guid>
+        <description></description>
+        <content:encoded><![CDATA[
+<!-- wp:paragraph -->
+<p>We are two people who walk long distances and then write about it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:pullquote -->
+<figure class="wp-block-pullquote"><blockquote><p>The mountains are calling and I must go.</p><cite>John Muir</cite></blockquote></figure>
+<!-- /wp:pullquote -->
+
+<!-- wp:paragraph -->
+<p>That quote is on roughly every trailhead sign in America, which is part of why we like it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote"><!-- wp:paragraph -->
+<p>A regular block quote, which is a different block type than a pull quote and may need different handling.</p>
+<!-- /wp:paragraph --><cite>Nobody in particular</cite></blockquote>
+<!-- /wp:quote -->
+
+<!-- wp:pullquote {"textAlign":"left","className":"is-style-solid-color"} -->
+<figure class="wp-block-pullquote has-text-align-left is-style-solid-color"><blockquote><p>A second pull quote with no citation at all.</p></blockquote></figure>
+<!-- /wp:pullquote -->
+]]></content:encoded>
+        <excerpt:encoded><![CDATA[<hr>
+<h5 class="page-description"><i>
+Who we are and why there are so many photos of talus
+</i></h5>
+<p>
+A little about the two of us and this site.
+</p>]]></excerpt:encoded>
+        <wp:post_id>5</wp:post_id>
+        <wp:post_date><![CDATA[2020-01-01 00:00:00]]></wp:post_date>
+        <wp:post_date_gmt><![CDATA[2020-01-01 00:00:00]]></wp:post_date_gmt>
+        <wp:post_modified><![CDATA[2020-01-01 00:00:00]]></wp:post_modified>
+        <wp:comment_status><![CDATA[closed]]></wp:comment_status>
+        <wp:ping_status><![CDATA[closed]]></wp:ping_status>
+        <wp:post_name><![CDATA[about]]></wp:post_name>
+        <wp:status><![CDATA[publish]]></wp:status>
+        <wp:post_parent>0</wp:post_parent>
+        <wp:menu_order>0</wp:menu_order>
+        <wp:post_type><![CDATA[page]]></wp:post_type>
+        <wp:post_password></wp:post_password>
+        <wp:is_sticky>0</wp:is_sticky>
+    </item>
+
+</channel>
+</rss>
