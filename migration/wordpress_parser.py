@@ -1,7 +1,6 @@
 import html
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -12,6 +11,8 @@ import mdformat
 from bs4 import BeautifulSoup, NavigableString, Tag
 from lxml import etree
 from markdownify import MarkdownConverter
+
+import config
 
 
 logger = logging.getLogger(__name__)
@@ -137,6 +138,10 @@ class WPMarkdownConverter(MarkdownConverter):
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
 
+    def convert_div(self, el: Tag, text: str, parent_tags: set) -> str:
+        """Keep the custom div classes that are necessary for formatting."""
+
+
     @staticmethod
     def _convert_youtube_embed(text: str):
         youtube_id = extract_youtube_id(text)
@@ -191,8 +196,9 @@ def _get_converter() -> WPMarkdownConverter:
     return WPMarkdownConverter(**MARKDOWNIFY_ARGS)
 
 
-def parse_wordpress_xml(xml_path: Path, skip_ids: list[str] = None) -> list[Post]:
+def parse_wordpress_xml(xml_path: Path, skip_ids: list[str | int] = None) -> list[Post]:
     skip_ids = skip_ids or []
+    skip_ids = [str(x) for x in skip_ids]
     tree = etree.parse(str(xml_path))
     root = tree.getroot()
 
@@ -252,7 +258,7 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
 
 def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:
     """Parse the author(s) from a WordPress XML item."""
-    overrides = json.loads(os.environ.get("AUTHOR_OVERRIDES", "{}"))
+    overrides = config.AUTHOR_OVERRIDES
     authors: list[str] = [x.text for x in item.findall("category[@domain='author']")]
     if not authors:
         # fallback to dc:creator

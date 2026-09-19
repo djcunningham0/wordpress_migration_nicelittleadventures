@@ -7,6 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from lxml import etree
 
+import config
 from wordpress_parser import parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ def migrate(
     full_rebuild: bool = False,
 ):
     xml_path, target_dir = parse_paths(xml_name, target_dir_name)
-    skip_ids = [x.strip() for x in os.getenv("SKIP_IDS", "").split(",")]
+    skip_ids = config.SKIP_IDS
     logger.info(f"Skipping posts with IDs: {skip_ids}")
     posts = parse_wordpress_xml(xml_path, skip_ids=skip_ids)
     logger.info(f"Parsed {len(posts):,} posts from {xml_path}")
@@ -54,9 +55,9 @@ def migrate(
 
 def parse_paths(xml_name: str = None, target_dir_name: str = None) -> tuple[Path, Path]:
     if xml_name is None:
-        xml_name = os.environ.get("XML_PATH")
+        xml_name = config.XML_PATH
     if target_dir_name is None:
-        target_dir_name = os.environ.get("TARGET_DIR")
+        target_dir_name = config.HUGO_TARGET_DIR
 
     if not xml_name or not target_dir_name:
         raise ValueError(
