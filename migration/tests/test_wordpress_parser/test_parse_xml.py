@@ -144,12 +144,46 @@ class TestFootnotes:
 
 
 class TestImages:
-    def test_parses_images_to_list(self, posts_by_id):
+    def test_parses_images_to_set(self, posts_by_id):
         images = posts_by_id["101"].images
         expected = {
             "https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg",
             "https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg",
         }
-        print(f"{images=}")
-        print(f"{expected=}")
         assert images == expected
+
+    def test_parses_videos_to_set(self, posts_by_id):
+        videos = posts_by_id["102"].videos
+        assert videos == {
+            "https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4"
+        }
+
+    def test_parses_images_and_videos(self, posts_by_id):
+        out = posts_by_id["102"]
+        assert out.images == {
+            "https://example.com/wp-content/uploads/2023/09/pack-layout.jpg",
+            "https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg",
+            "https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg",
+        }
+        assert out.videos == {
+            "https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4"
+        }
+
+
+# --------------------------------------------------------------------------
+# embeds
+# --------------------------------------------------------------------------
+
+
+class TestEmbeds:
+    def test_iframe_persists(self, posts_by_id):
+        markdown = posts_by_id["102"].markdown
+        # conversion doesn't maintain exact order of attributes, so just going to do
+        # some basic checks
+        assert "<iframe " in markdown
+        assert "</iframe>" in markdown
+        assert 'src="https://caltopo.com/m/ABC123"' in markdown
+
+    def test_youtube_embed_is_converted_to_shortcode(self, posts_by_id):
+        markdown = posts_by_id["102"].markdown
+        assert "{{< youtube aqz-KE-bpKQ >}}" in markdown

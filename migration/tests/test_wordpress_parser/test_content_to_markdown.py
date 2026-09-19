@@ -13,7 +13,12 @@ Assert the thing you actually care about.
 import pytest
 from bs4 import BeautifulSoup
 
-from wordpress_parser import MarkdownOutput, content_to_markdown, strip_wp_size_suffix
+from wordpress_parser import (
+    MarkdownOutput,
+    content_to_markdown,
+    extract_youtube_id,
+    strip_wp_size_suffix,
+)
 
 
 def convert(html: str) -> MarkdownOutput:
@@ -238,6 +243,23 @@ class TestEmbeds:
             "</div></figure>"
         )
         assert "{{< youtube aqz-KE-bpKQ >}}" in convert(html).markdown
+
+
+@pytest.mark.parametrize(
+    "url, expected",
+    [
+        ("https://www.youtube.com/watch?v=9uBATQJIArE", "9uBATQJIArE"),
+        ("https://youtu.be/PoIngwoBW-Q", "PoIngwoBW-Q"),
+        (
+            "https://www.youtube.com/watch?v=pzSHqwNdVqE&amp;ab_channel=MostlySimpsons",
+            "pzSHqwNdVqE",
+        ),
+        ("https://www.youtube.com/v/123", "123"),
+        ("https://www.youtube.com/embed/123", "123"),
+    ],
+)
+def test_extract_youtube_id(url, expected):
+    assert extract_youtube_id(url) == expected
 
 
 # --------------------------------------------------------------------------

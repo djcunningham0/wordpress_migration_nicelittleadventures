@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlparse, parse_qs
 
 import mdformat
 from bs4 import BeautifulSoup, NavigableString, Tag
@@ -138,8 +139,40 @@ class WPMarkdownConverter(MarkdownConverter):
 
     @staticmethod
     def _convert_youtube_embed(text: str):
-        url = text.split("v=")[1].split("&")[0]
-        return f"{{{{< youtube {url} >}}}}"
+        youtube_id = extract_youtube_id(text)
+        return f"{{{{< youtube {youtube_id} >}}}}"
+
+
+def extract_youtube_id(url: str) -> str | None:
+    """Extract the YouTube video ID from a URL. Returns the video ID, or None if it
+    can't be found.
+    """
+    parsed = urlparse(url)
+    hostname = parsed.hostname.lower() if parsed.hostname else ""
+
+    # Strip leading "www." for easier matching
+    if hostname.startswith("www."):
+        hostname = hostname[4:]
+
+    # youtu.be/VIDEO_ID
+    if hostname == "youtu.be":
+        video_id = parsed.path.lstrip("/")
+        return video_id if video_id else None
+
+    if hostname in ("youtube.com", "m.youtube.com", "music.youtube.com"):
+        # /watch?v=VIDEO_ID
+        if parsed.path == "/watch":
+            query = parse_qs(parsed.query)
+            video_id = query.get("v")
+            return video_id[0] if video_id else None
+
+        # /embed/VIDEO_ID or /v/VIDEO_ID or /shorts/VIDEO_ID or /live/VIDEO_ID
+        for prefix in ("/embed/", "/v/", "/shorts/", "/live/"):
+            if parsed.path.startswith(prefix):
+                video_id = parsed.path[len(prefix) :].split("/")[0]
+                return video_id if video_id else None
+
+    return None
 
 
 def strip_wp_size_suffix(url: str) -> str:
