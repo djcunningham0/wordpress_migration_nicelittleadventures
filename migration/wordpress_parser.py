@@ -1,8 +1,9 @@
+import html
 import json
 import logging
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
@@ -47,48 +48,66 @@ class Post:
     _footnotes_json: list[dict[str, str]]
 
     def __post_init__(self):
-        self.is_draft = self.status in ["draft", "pending"]
-        self.markdown = content_to_markdown(self._content, self._footnotes_json)
+        self.is_draft: bool = self.status in ["draft", "pending"]
         self.subtitle, self.excerpt = parse_custom_excerpt(self._excerpt)
+        result = content_to_markdown(
+            html_content=self._content, footnotes_json=self._footnotes_json
+        )
+        self.markdown: str = result.markdown
+        self.images: set[str] = result.images
+        self.videos: set[str] = result.videos
 
     def __repr__(self):
         return f"Post(title={self.title}, id_={self.id_}, type={self.post_type}, author={self.author}, date={self.date})"
 
 
+@dataclass
+class MarkdownOutput:
+    markdown: str
+    images: set[str] = field(default_factory=set)
+    videos: set[str] = field(default_factory=set)
+
+
 class WPMarkdownConverter(MarkdownConverter):
-    """Converts WordPress block HTML to Markdown, keeping images/video as
-    raw HTML for figure/caption/column flexibility in Hugo."""
+    """Converts WordPress block HTML to Markdown, keeping images, videos, and embeds as
+    raw HTML for flexibility in Hugo."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.images: list[str] = []  # collected as a side effect of conversion
-        self.videos: list[str] = []
+        self.images: set[str] = set()  # collected as a side effect of conversion
+        self.videos: set[str] = set()
 
-    def convert_img(
-        self,
-        el: Tag,
-        text: str,
-        parent_tags: set,
-        override_src: str | None = None,
-    ) -> str:
-        src = override_src or el.get("src", "")
+    def convert_img(self, el: Tag, text: str, parent_tags: set) -> str:
+        src = el.get("src", "")
         alt = el.get("alt", "")
+
+        # self linking images will have an <a> parent tag linking to the full resolution image
+        if el.parent is not None and el.parent.name == "a":
+            href = el.parent.get("href", "")
+            if strip_wp_size_suffix(href) == strip_wp_size_suffix(src):
+                src = href
+
         if src:
-            self.images.append(src)
-        attrs = f'src="{src}"'
+            self.images.add(src)
+
+        attrs = f'src="{html.escape(src)}"'
         if alt:
-            attrs += f' alt="{alt}"'
+            attrs += f' alt="{html.escape(alt)}"'
         return f"<img {attrs}/>\n"
 
     def convert_video(self, el: Tag, text: str, parent_tags: set) -> str:
         src = el.get("src", "")
         if src:
-            self.videos.append(src)
-        attrs = f'src="{src}"'
+            self.videos.add(src)
+
+        attrs = []
         if el.get("controls") is not None:
-            attrs = f"controls {attrs}"
+            attrs.append("controls")
         if el.get("playsinline") is not None:
-            attrs += " playsinline"
+            attrs.append("playsinline")
+
+        attrs.append(f'src="{html.escape(src)}"')
+        attrs = " ".join(attrs)
         return f"<video {attrs}></video>\n"
 
     def convert_figcaption(self, el: Tag, text: str, parent_tags: set) -> str:
@@ -101,31 +120,39 @@ class WPMarkdownConverter(MarkdownConverter):
             if not (isinstance(c, NavigableString) and not c.strip())
         ]
 
-        # Self-linking image: <a href="..."><img/></a> with nothing else inside.
-        # Use the href image rather than the src value from the <img> tag. (Convention:
-        # the images on my Wordpress site link to full-res versions of themselves.))
-        if len(children) == 1 and children[0].name == "img":
-            return self.convert_img(
-                children[0], "", parent_tags, override_src=el.get("href")
-            )
+        # Self-linking image: <a href="..."><img/></a> with nothing else inside. These
+        # are handled by `self.convert_img`, so no additional processing needed here.
+        if len(children) == 1 and getattr(children[0], "name", None) == "img":
+            return text
+
         return super().convert_a(el, text, parent_tags)
 
     def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
-        print(f"{el=}")
         inner = text.strip("\n")
-        print(f"{el.get("class")=}")
         if "is-provider-youtube" in el.get("class", []):
             return self._convert_youtube_embed(inner)
         return f"<figure>\n{inner}\n</figure>\n"
 
-    def _convert_youtube_embed(self, text: str):
-        print("here")
+    @staticmethod
+    def _convert_youtube_embed(text: str):
         url = text.split("v=")[1].split("&")[0]
         return f"{{{{< youtube {url} >}}}}"
 
 
-def convert(html: str) -> str:
-    return WPMarkdownConverter(**MARKDOWNIFY_ARGS).convert(html).strip()
+def strip_wp_size_suffix(url: str) -> str:
+    """Remove a trailing WordPress resize suffix like '-1024x768' before the
+    extension.
+
+    Example:
+    >>> url = "https://example.com/wp-content/uploads/image-1024x768.jpg"
+    >>> strip_wp_size_suffix(url)
+    'https://example.com/wp-content/uploads/image.jpg'
+    """
+    return re.sub(r"-\d+x\d+(?=\.\w+(?:\?.*)?$)", "", url)
+
+
+def _get_converter() -> WPMarkdownConverter:
+    return WPMarkdownConverter(**MARKDOWNIFY_ARGS)
 
 
 def parse_wordpress_xml(xml_path: Path, skip_ids: list[str] = None) -> list[Post]:
@@ -232,20 +259,25 @@ def resolve_footnotes(markdown: str, footnotes: list[dict]) -> str:
     definitions = []
     for n, fn_id in enumerate(order, start=1):
         content_html = footnotes_by_id.get(fn_id, "")
-        content_md = convert(content_html)
+        converter = _get_converter()
+        content_md = converter.convert(content_html)
         definitions.append(f"[^{n}]: {content_md}")
 
     return body + "\n\n" + "\n".join(definitions)
 
 
-def content_to_markdown(html_content: str, footnotes_json: list[dict[str, str]]) -> str:
+def content_to_markdown(
+    html_content: str,
+    footnotes_json: list[dict[str, str]],
+) -> MarkdownOutput:
     """Convert HTML content to Markdown."""
 
     if not html_content:
-        return ""
+        return MarkdownOutput(markdown="")
 
     html_content = replace_footnote_markers_with_placeholders(html_content)
-    markdown = convert(html_content)
+    converter = _get_converter()
+    markdown = converter.convert(html_content).strip()
     markdown = resolve_footnotes(markdown, footnotes_json)
 
     # prettify markdown
@@ -255,7 +287,9 @@ def content_to_markdown(html_content: str, footnotes_json: list[dict[str, str]])
         extensions=["footnote", "simple_breaks", "frontmatter", "gfm"],
     )
 
-    return markdown
+    return MarkdownOutput(
+        markdown=markdown, images=converter.images, videos=converter.videos
+    )
 
 
 def parse_custom_excerpt(excerpt: str) -> tuple[str, str]:

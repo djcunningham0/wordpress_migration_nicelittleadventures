@@ -18,26 +18,24 @@ pytestmark = pytest.mark.usefixtures("no_author_overrides")
 # --------------------------------------------------------------------------
 
 
-def test_parses_only_posts_and_pages(posts):
-    """Attachments must not become Posts."""
-    assert {p.id_ for p in posts} == {"101", "102", "103", "104", "105", "106", "5"}
+class TestDocumentLevel:
+    def test_parses_only_posts_and_pages(self, posts):
+        """Attachments must not become Posts."""
+        assert {p.id_ for p in posts} == {"101", "102", "103", "104", "105", "106", "5"}
 
+    def test_post_types(self, posts_by_id):
+        assert posts_by_id["101"].post_type == "post"
+        assert posts_by_id["5"].post_type == "page"
 
-def test_post_types(posts_by_id):
-    assert posts_by_id["101"].post_type == "post"
-    assert posts_by_id["5"].post_type == "page"
+    def test_skip_ids_excludes_posts(self, xml_path):
+        posts = wp.parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
+        assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106"}
 
-
-def test_skip_ids_excludes_posts(xml_path):
-    posts = wp.parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
-    assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106"}
-
-
-def test_skip_ids_default_is_not_shared_between_calls(xml_path):
-    """Guards against a mutable-default regression if `skip_ids=[]` ever creeps in."""
-    first = wp.parse_wordpress_xml(xml_path)
-    second = wp.parse_wordpress_xml(xml_path)
-    assert {p.id_ for p in first} == {p.id_ for p in second}
+    def test_skip_ids_default_is_not_shared_between_calls(self, xml_path):
+        """Guards against a mutable-default regression if `skip_ids=[]` ever creeps in."""
+        first = wp.parse_wordpress_xml(xml_path)
+        second = wp.parse_wordpress_xml(xml_path)
+        assert {p.id_ for p in first} == {p.id_ for p in second}
 
 
 # --------------------------------------------------------------------------
@@ -45,12 +43,20 @@ def test_skip_ids_default_is_not_shared_between_calls(xml_path):
 # --------------------------------------------------------------------------
 
 
-def test_basic_fields(posts_by_id):
-    post = posts_by_id["101"]
-    assert post.title == "Sawtooth Traverse Part 1: Hiking the Sawtooth High Route"
-    assert post.slug == "sawtooth-traverse-part-1"
-    assert post.date == "2023-08-14 15:30:00"
-    assert post.status == "publish"
+class TestBasicFields:
+    def test_basic_fields(self, posts_by_id):
+        post = posts_by_id["101"]
+        assert post.title == "Sawtooth Traverse Part 1: Hiking the Sawtooth High Route"
+        assert post.slug == "sawtooth-traverse-part-1"
+        assert post.date == "2023-08-14 15:30:00"
+        assert post.status == "publish"
+
+    @pytest.mark.parametrize(
+        "post_id,expected",
+        [("101", False), ("102", False), ("103", True), ("104", True), ("5", False)],
+    )
+    def test_is_draft(self, posts_by_id, post_id, expected):
+        assert posts_by_id[post_id].is_draft is expected
 
 
 # --------------------------------------------------------------------------
@@ -58,23 +64,22 @@ def test_basic_fields(posts_by_id):
 # --------------------------------------------------------------------------
 
 
-def test_categories_and_tags_are_separated(posts_by_id):
-    post = posts_by_id["101"]
-    assert post.categories == ["Hiking", "Trip Reports"]
-    assert post.tags == ["Idaho", "Sawtooths"]
+class TestTaxonomies:
+    def test_categories_and_tags_are_separated(self, posts_by_id):
+        post = posts_by_id["101"]
+        assert post.categories == ["Hiking", "Trip Reports"]
+        assert post.tags == ["Idaho", "Sawtooths"]
 
+    def test_author_categories_do_not_leak_into_categories(self, posts_by_id):
+        """`category[@domain='author']` must not be picked up by the category selector."""
+        post = posts_by_id["101"]
+        assert "Danny" not in post.categories
+        assert "Siyang" not in post.categories
 
-def test_author_categories_do_not_leak_into_categories(posts_by_id):
-    """`category[@domain='author']` must not be picked up by the category selector."""
-    post = posts_by_id["101"]
-    assert "Danny" not in post.categories
-    assert "Siyang" not in post.categories
-
-
-def test_missing_taxonomies_yield_empty_lists(posts_by_id):
-    post = posts_by_id["103"]
-    assert post.categories == []
-    assert post.tags == []
+    def test_missing_taxonomies_yield_empty_lists(self, posts_by_id):
+        post = posts_by_id["103"]
+        assert post.categories == []
+        assert post.tags == []
 
 
 # --------------------------------------------------------------------------
@@ -82,46 +87,30 @@ def test_missing_taxonomies_yield_empty_lists(posts_by_id):
 # --------------------------------------------------------------------------
 
 
-def test_single_author_returns_string(posts_by_id):
-    assert posts_by_id["102"].author == "Danny"
+class TestAuthors:
+    def test_single_author_returns_string(self, posts_by_id):
+        assert posts_by_id["102"].author == "Danny"
 
+    def test_multiple_authors_returns_list_in_document_order(self, posts_by_id):
+        assert posts_by_id["101"].author == ["Danny", "Siyang"]
 
-def test_multiple_authors_returns_list_in_document_order(posts_by_id):
-    assert posts_by_id["101"].author == ["Danny", "Siyang"]
+    def test_author_falls_back_to_dc_creator(self, posts_by_id):
+        """103 has no author category, so we fall back — and get the *login*, lowercase."""
+        assert posts_by_id["103"].author == "danny"
 
+    def test_author_overrides_applied(self, xml_path, monkeypatch):
+        monkeypatch.setenv(
+            "AUTHOR_OVERRIDES", json.dumps({"Danny": "Danny C", "danny": "Danny C"})
+        )
+        posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
+        assert posts["102"].author == "Danny C"
+        assert posts["101"].author == ["Danny C", "Siyang"]
+        assert posts["103"].author == "Danny C"  # override also normalizes the fallback
 
-def test_author_falls_back_to_dc_creator(posts_by_id):
-    """103 has no author category, so we fall back — and get the *login*, lowercase."""
-    assert posts_by_id["103"].author == "danny"
-
-
-def test_author_overrides_applied(xml_path, monkeypatch):
-    monkeypatch.setenv(
-        "AUTHOR_OVERRIDES", json.dumps({"Danny": "Danny C", "danny": "Danny C"})
-    )
-    posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
-    assert posts["102"].author == "Danny C"
-    assert posts["101"].author == ["Danny C", "Siyang"]
-    assert posts["103"].author == "Danny C"  # override also normalizes the fallback
-
-
-def test_author_override_of_unknown_name_is_noop(xml_path, monkeypatch):
-    monkeypatch.setenv("AUTHOR_OVERRIDES", json.dumps({"Nobody": "Someone"}))
-    posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
-    assert posts["102"].author == "Danny"
-
-
-# --------------------------------------------------------------------------
-# status / draft
-# --------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize(
-    "post_id,expected",
-    [("101", False), ("102", False), ("103", True), ("104", True), ("5", False)],
-)
-def test_is_draft(posts_by_id, post_id, expected):
-    assert posts_by_id[post_id].is_draft is expected
+    def test_author_override_of_unknown_name_is_noop(self, xml_path, monkeypatch):
+        monkeypatch.setenv("AUTHOR_OVERRIDES", json.dumps({"Nobody": "Someone"}))
+        posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
+        assert posts["102"].author == "Danny"
 
 
 # --------------------------------------------------------------------------
@@ -129,22 +118,38 @@ def test_is_draft(posts_by_id, post_id, expected):
 # --------------------------------------------------------------------------
 
 
-def test_footnotes_postmeta_is_parsed_as_json(posts_by_id):
-    footnotes = posts_by_id["105"]._footnotes_json
-    assert [fn["id"] for fn in footnotes] == ["deadbeef", "c0ffee01"]
-    assert footnotes == [
-        {"content": "Footnote two.", "id": "deadbeef"},
-        {
-            "content": 'Footnote one. With <a href="https://example.com/history">a link</a>.',
-            "id": "c0ffee01",
-        },
-    ]
+class TestFootnotes:
+    def test_footnotes_postmeta_is_parsed_as_json(self, posts_by_id):
+        footnotes = posts_by_id["105"]._footnotes_json
+        assert [fn["id"] for fn in footnotes] == ["deadbeef", "c0ffee01"]
+        assert footnotes == [
+            {"content": "Footnote two.", "id": "deadbeef"},
+            {
+                "content": 'Footnote one. With <a href="https://example.com/history">a link</a>.',
+                "id": "c0ffee01",
+            },
+        ]
+
+    def test_footnotes_absent_yields_empty_list(self, posts_by_id):
+        assert posts_by_id["103"]._footnotes_json == []
+
+    def test_thumbnail_postmeta_does_not_confuse_footnote_lookup(self, posts_by_id):
+        """104 has _thumbnail_id but no footnotes; the XPath must not match the wrong meta."""
+        assert posts_by_id["104"]._footnotes_json == []
 
 
-def test_footnotes_absent_yields_empty_list(posts_by_id):
-    assert posts_by_id["103"]._footnotes_json == []
+# --------------------------------------------------------------------------
+# Images and videos
+# --------------------------------------------------------------------------
 
 
-def test_thumbnail_postmeta_does_not_confuse_footnote_lookup(posts_by_id):
-    """104 has _thumbnail_id but no footnotes; the XPath must not match the wrong meta."""
-    assert posts_by_id["104"]._footnotes_json == []
+class TestImages:
+    def test_parses_images_to_list(self, posts_by_id):
+        images = posts_by_id["101"].images
+        expected = {
+            "https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg",
+            "https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg",
+        }
+        print(f"{images=}")
+        print(f"{expected=}")
+        assert images == expected

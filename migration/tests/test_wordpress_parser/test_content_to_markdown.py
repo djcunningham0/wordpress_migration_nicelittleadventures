@@ -12,10 +12,10 @@ Assert the thing you actually care about.
 
 import pytest
 
-from wordpress_parser import content_to_markdown
+from wordpress_parser import MarkdownOutput, content_to_markdown, strip_wp_size_suffix
 
 
-def convert(html: str) -> str:
+def convert(html: str) -> MarkdownOutput:
     return content_to_markdown(html, [])
 
 
@@ -44,18 +44,19 @@ class TestBasics:
         ],
     )
     def test_basic_blocks(self, html, expected):
-        assert expected in convert(html)
+        result = convert(html)
+        assert expected in result.markdown
 
     def test_gutenberg_comments_are_stripped(self):
         html = "<!-- wp:paragraph -->\n<p>Body text.</p>\n<!-- /wp:paragraph -->"
-        out = convert(html)
-        assert "wp:paragraph" not in out
-        assert "Body text." in out
+        result = convert(html)
+        assert "wp:paragraph" not in result.markdown
+        assert "Body text." in result.markdown
 
     def test_heading_style_is_atx(self):
-        out = convert("<h1>Title</h1>")
-        assert out.startswith("# Title")
-        assert "===" not in out
+        result = convert("<h1>Title</h1>")
+        assert result.markdown.startswith("# Title")
+        assert "===" not in result.markdown
 
 
 # --------------------------------------------------------------------------
@@ -71,7 +72,8 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        assert out == ('<figure>\n<img src="https://example.com/a.jpg"/>\n</figure>\n')
+        expected = '<figure>\n<img src="https://example.com/a.jpg"/>\n</figure>\n'
+        assert out.markdown == expected
 
     def test_alt_text_is_preserved(self):
         html = (
@@ -80,9 +82,8 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        assert out == (
-            '<figure>\n<img src="https://example.com/a.jpg" alt="Alt text"/>\n</figure>\n'
-        )
+        expected = '<figure>\n<img src="https://example.com/a.jpg" alt="Alt text"/>\n</figure>\n'
+        assert out.markdown == expected
 
     def test_image_keeps_caption(self):
         html = (
@@ -92,7 +93,7 @@ class TestImages:
             "</figure>\n"
         )
         out = convert(html)
-        assert out == (
+        assert out.markdown == (
             "<figure>\n"
             '<img src="https://example.com/a.jpg"/>\n'
             "<figcaption>A caption.</figcaption>\n"
@@ -113,7 +114,43 @@ class TestImages:
             '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg"/>\n'
             "</figure>\n"
         )
-        assert out == expected
+        assert out.markdown == expected
+
+    @pytest.mark.parametrize(
+        "file_name, expected",
+        [
+            (
+                "https://example.com/wp-content/uploads/image-1024x768.jpg",
+                "https://example.com/wp-content/uploads/image.jpg",
+            ),
+            (
+                "example.com/wp-content/uploads/image-1024x768.jpg",
+                "example.com/wp-content/uploads/image.jpg",
+            ),
+            ("image-1024x768.jpg", "image.jpg"),
+            ("image-1024x1024.jpg", "image.jpg"),
+            ("image-123x456.jpg", "image.jpg"),
+            ("image-123x4567.jpg", "image.jpg"),
+            ("image-1x2.jpg", "image.jpg"),
+        ],
+    )
+    def test_strip_wp_size_suffix(self, file_name, expected):
+        assert strip_wp_size_suffix(file_name) == expected
+
+    @pytest.mark.parametrize(
+        "file_name",
+        [
+            "https://example.com/wp-content/uploads/image.jpg",
+            "example.com/wp-content/uploads/image.jpg",
+            "image.jpg",
+        ],
+    )
+    def test_strip_wp_size_suffix_with_no_suffix(self, file_name):
+        assert strip_wp_size_suffix(file_name) == file_name
+
+    def test_image_with_escaped_characters_in_alt_text(self):
+        html = '<img src="https://example.com/a.jpg" alt="a quote &quot;Overlook&quot; and ampersand &amp;"/>'
+        assert convert(html).markdown.strip() == html.strip()
 
 
 # --------------------------------------------------------------------------
@@ -159,7 +196,7 @@ class TestEmbeds:
             'frameborder="0" allowfullscreen></iframe>'
         )
         out = convert(iframe_block)
-        assert "caltopo.com/m/ABC123" in out
+        assert "caltopo.com/m/ABC123" in out.markdown
 
     def test_self_hosted_video_is_preserved(self):
         html = (
@@ -167,11 +204,11 @@ class TestEmbeds:
             '<video controls src="https://example.com/flyover.mp4"></video>'
             "</figure>"
         )
-        out = convert(html).strip()
-        assert out == (
+        out = convert(html)
+        assert out.markdown == (
             "<figure>\n"
             '<video controls src="https://example.com/flyover.mp4"></video>\n'
-            "</figure>"
+            "</figure>\n"
         )
 
     def test_youtube_embed_is_converted_to_hugo_shortcode(self):
@@ -181,7 +218,7 @@ class TestEmbeds:
             "https://www.youtube.com/watch?v=aqz-KE-bpKQ\n"
             "</div></figure>"
         )
-        assert "{{< youtube aqz-KE-bpKQ >}}" in convert(html)
+        assert "{{< youtube aqz-KE-bpKQ >}}" in convert(html).markdown
 
 
 # --------------------------------------------------------------------------
@@ -198,7 +235,7 @@ class TestTables:
             "<tr><td>Sugar</td><td>2 tbsp</td></tr></tbody>"
             '</table><figcaption class="wp-element-caption">Per 1 liter of water.</figcaption></figure>'
         )
-        out = convert(table_with_header)
+        out = convert(table_with_header).markdown
         assert "| Ingredient" in out
         assert "| Table salt" in out
         assert "1/4 tsp" in out
@@ -212,7 +249,7 @@ class TestTables:
             "<tr><td>Just</td><td>body cells</td></tr>"
             "</tbody></table></figure>"
         )
-        out = convert(html)
+        out = convert(html).markdown
         assert "No header row" in out
         assert "on this one" in out
         assert "body cells" in out
@@ -235,11 +272,11 @@ class TestQuotes:
     )
 
     def test_blockquote(self):
-        out = convert(self.BLOCKQUOTE)
+        out = convert(self.BLOCKQUOTE).markdown
         assert "> A regular block quote." in out
 
     def test_pullquote_becomes_blockquote(self):
-        out = convert(self.PULLQUOTE)
+        out = convert(self.PULLQUOTE).markdown
         assert "> The mountains are calling and I must go." in out
 
     @pytest.mark.xfail(
@@ -247,7 +284,7 @@ class TestQuotes:
         strict=True,
     )
     def test_citation_is_marked_as_a_citation(self):
-        out = convert(self.PULLQUOTE)
+        out = convert(self.PULLQUOTE).markdown
         assert "— John Muir" in out or "*John Muir*" in out
 
 
@@ -264,13 +301,13 @@ class TestAuthorDivs:
 
     @pytest.mark.xfail()
     def test_author_divs_survive_conversion(self):
-        out = convert(AUTHOR_DIVS)
+        out = convert(AUTHOR_DIVS).markdown
         assert 'class="author-danny"' in out
         assert 'class="author-sayang"' in out
 
     @pytest.mark.xfail()
     def test_exact_author_div_output(self):
-        out = convert(self.AUTHOR_DIVS)
+        out = convert(self.AUTHOR_DIVS).markdown
         assert out == (
             '<div class="author-danny">\n<p>One of us says a thing.</p>\n</div>\n'
             '<div class="author-sayang">\n<p>The other says another thing.</p>\n</div>'
@@ -284,10 +321,19 @@ class TestAuthorDivs:
 
 class TestDegenerateInput:
     def test_empty_content(self):
-        assert convert("") == ""
+        out = convert("")
+        assert out.markdown == ""
+        assert out.images == set()
+        assert out.videos == set()
 
     def test_whitespace_only_content(self):
-        assert convert("\n\n   \n") == ""
+        out = convert("\n\n   \n")
+        assert out.markdown == ""
+        assert out.images == set()
+        assert out.videos == set()
 
     def test_none_content_does_not_crash(self):
-        assert convert(None) == ""
+        out = convert(None)
+        assert out.markdown == ""
+        assert out.images == set()
+        assert out.videos == set()

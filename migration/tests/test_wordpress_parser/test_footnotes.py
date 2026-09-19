@@ -125,7 +125,7 @@ def test_footnote_content_html_is_converted_to_markdown():
 def test_end_to_end_footnote_conversion():
     html = f"<p>The high route begins above treeline.{sup('a1b2c3d4')}</p>"
     footnotes = [{"id": "a1b2c3d4", "content": "Unmaintained above 9,000 ft."}]
-    out = content_to_markdown(html, footnotes)
+    out = content_to_markdown(html, footnotes).markdown
     assert "The high route begins above treeline.[^1]" in out
     assert "[^1]: Unmaintained above 9,000 ft." in out
 
