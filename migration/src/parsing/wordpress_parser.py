@@ -8,12 +8,13 @@ from pathlib import Path
 from typing import Literal
 
 import mdformat
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import NavigableString, Tag
 from lxml import etree
 from markdownify import MarkdownConverter
 from slugify import slugify
 
 from src.config import AUTHOR_OVERRIDES
+from src.parsing.excerpts import parse_custom_excerpt
 from src.parsing.images import strip_wp_size_suffix
 from src.parsing.youtube import create_youtube_shortcode
 
@@ -313,33 +314,3 @@ def content_to_markdown(
     return MarkdownOutput(
         markdown=markdown, images=converter.images, videos=converter.videos
     )
-
-
-def parse_custom_excerpt(excerpt: str) -> tuple[str, str]:
-    """Parse the custom excerpt HTML to extract the subtitle and excerpt.
-
-    Example:
-    <hr>
-    <h5 class="page-description"><i>
-    This is the subtitle
-    </i></h5>
-    <p>
-    And this is the excerpt text.
-    </p>
-    """
-    if excerpt is None:
-        return "", ""
-
-    soup = BeautifulSoup(excerpt, "html.parser")
-    subtitle = soup.select_one("h5.page-description")
-    paragraph = soup.find("p")
-    return (
-        normalize(subtitle) if subtitle else "",
-        normalize(paragraph) if paragraph else "",
-    )
-
-
-def normalize(element) -> str:
-    """Normalize the text content of an HTML element by stripping whitespace and joining
-    lines."""
-    return " ".join(element.get_text().split())
