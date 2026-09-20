@@ -3,11 +3,6 @@ import pytest
 from src.parsing.slugs import create_unique_slug
 
 
-# --------------------------------------------------------------------------
-# slugs
-# --------------------------------------------------------------------------
-
-
 class TestSlugs:
     @pytest.mark.parametrize(
         "input_slug, expected",

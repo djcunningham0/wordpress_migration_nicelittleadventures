@@ -1,3 +1,5 @@
+from bs4 import BeautifulSoup
+
 from src.parsing.excerpts import normalize, parse_custom_excerpt
 
 
@@ -68,12 +70,8 @@ class TestParseCustomExcerpt:
         assert post.subtitle == ""
         assert post.excerpt == ""
 
-    # --------------------------------------------------------------------------
-    # normalize()
-    # --------------------------------------------------------------------------
 
+class TestNormalize:
     def test_normalize_collapses_all_whitespace(self):
-        from bs4 import BeautifulSoup
-
         el = BeautifulSoup("<p>  a\n\n  b\tc  </p>", "html.parser").find("p")
         assert normalize(el) == "a b c"
