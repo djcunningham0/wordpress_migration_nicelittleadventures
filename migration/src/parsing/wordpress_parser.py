@@ -14,7 +14,8 @@ from markdownify import MarkdownConverter
 from slugify import slugify
 
 from src.config import AUTHOR_OVERRIDES
-from src.parsing.youtube import create_youtube_shortcode, extract_youtube_id
+from src.parsing.images import strip_wp_size_suffix
+from src.parsing.youtube import create_youtube_shortcode
 
 
 logger = logging.getLogger(__name__)
@@ -141,18 +142,6 @@ class WPMarkdownConverter(MarkdownConverter):
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
-
-
-def strip_wp_size_suffix(url: str) -> str:
-    """Remove a trailing WordPress resize suffix like '-1024x768' before the
-    extension.
-
-    Example:
-    >>> url = "https://example.com/wp-content/uploads/image-1024x768.jpg"
-    >>> strip_wp_size_suffix(url)
-    'https://example.com/wp-content/uploads/image.jpg'
-    """
-    return re.sub(r"-\d+x\d+(?=\.\w+(?:\?.*)?$)", "", url)
 
 
 def _get_converter() -> WPMarkdownConverter:
