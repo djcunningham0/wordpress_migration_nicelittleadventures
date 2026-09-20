@@ -6,7 +6,6 @@ import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
-from urllib.parse import urlparse, parse_qs
 
 import mdformat
 from bs4 import BeautifulSoup, NavigableString, Tag
@@ -15,6 +14,7 @@ from markdownify import MarkdownConverter
 from slugify import slugify
 
 from src.config import AUTHOR_OVERRIDES
+from src.parsing.youtube import create_youtube_shortcode, extract_youtube_id
 
 
 logger = logging.getLogger(__name__)
@@ -136,48 +136,11 @@ class WPMarkdownConverter(MarkdownConverter):
     def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
         inner = text.strip("\n")
         if "is-provider-youtube" in el.get("class", []):
-            return self._convert_youtube_embed(inner)
+            return create_youtube_shortcode(inner)
         return f"<figure>\n{inner}\n</figure>\n"
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
-
-    @staticmethod
-    def _convert_youtube_embed(text: str):
-        youtube_id = extract_youtube_id(text)
-        return f"{{{{< youtube {youtube_id} >}}}}"
-
-
-def extract_youtube_id(url: str) -> str | None:
-    """Extract the YouTube video ID from a URL. Returns the video ID, or None if it
-    can't be found.
-    """
-    parsed = urlparse(url)
-    hostname = parsed.hostname.lower() if parsed.hostname else ""
-
-    # Strip leading "www." for easier matching
-    if hostname.startswith("www."):
-        hostname = hostname[4:]
-
-    # youtu.be/VIDEO_ID
-    if hostname == "youtu.be":
-        video_id = parsed.path.lstrip("/")
-        return video_id if video_id else None
-
-    if hostname in ("youtube.com", "m.youtube.com", "music.youtube.com"):
-        # /watch?v=VIDEO_ID
-        if parsed.path == "/watch":
-            query = parse_qs(parsed.query)
-            video_id = query.get("v")
-            return video_id[0] if video_id else None
-
-        # /embed/VIDEO_ID or /v/VIDEO_ID or /shorts/VIDEO_ID or /live/VIDEO_ID
-        for prefix in ("/embed/", "/v/", "/shorts/", "/live/"):
-            if parsed.path.startswith(prefix):
-                video_id = parsed.path[len(prefix) :].split("/")[0]
-                return video_id if video_id else None
-
-    return None
 
 
 def strip_wp_size_suffix(url: str) -> str:
