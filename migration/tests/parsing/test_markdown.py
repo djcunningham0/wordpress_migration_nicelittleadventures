@@ -268,24 +268,44 @@ class TestQuotes:
 
 
 class TestAuthorDivs:
-    AUTHOR_DIVS = (
-        '<div class="author-danny"><p>One of us says a thing.</p></div>'
-        '<div class="author-sayang"><p>The other says another thing.</p></div>'
-    )
-
-    @pytest.mark.xfail()
-    def test_author_divs_survive_conversion(self):
-        out = convert(AUTHOR_DIVS).markdown
-        assert 'class="author-danny"' in out
-        assert 'class="author-sayang"' in out
-
-    @pytest.mark.xfail()
     def test_exact_author_div_output(self):
-        out = convert(self.AUTHOR_DIVS).markdown
-        assert out == (
-            '<div class="author-danny">\n<p>One of us says a thing.</p>\n</div>\n'
-            '<div class="author-sayang">\n<p>The other says another thing.</p>\n</div>'
+        html = (
+            '<div class="fixture-author-1"><p>One of us says a thing.</p></div>'
+            '<div class="fixture-author-2"><p>The other says another thing.</p></div>'
         )
+        out = convert(html).markdown
+        expected = (
+            '<div class="fixture-author-1">\n\n'
+            "One of us says a thing.\n\n"
+            "</div>\n"
+            '<div class="fixture-author-2">\n\n'
+            "The other says another thing.\n\n"
+            "</div>\n"
+        )
+        assert out == expected
+
+    def test_other_divs_are_skipped(self):
+        html = (
+            '<div class="fixture-author-8"><p>One of us says a thing.</p></div>'
+            '<div class="fixture-author-9"><p>The other says another thing.</p></div>'
+        )
+        out = convert(html).markdown
+        expected = "One of us says a thing.\n\nThe other says another thing.\n"
+        assert out == expected
+
+    def test_only_keeps_specified_div(self):
+        html = (
+            '<div class="fixture-author-1"><p>One of us says a thing.</p></div>'
+            '<div class="fixture-author-9"><p>Another sentence.</p></div>'
+        )
+        out = convert(html).markdown
+        expected = (
+            '<div class="fixture-author-1">\n\n'
+            "One of us says a thing.\n\n"
+            "</div>\n\n"
+            "Another sentence.\n"
+        )
+        assert out == expected
 
 
 # --------------------------------------------------------------------------

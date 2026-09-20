@@ -6,6 +6,7 @@ import mdformat
 from bs4 import NavigableString, Tag
 from markdownify import MarkdownConverter
 
+from src.config import KEEP_CUSTOM_DIV_CLASSES
 from src.parsing.images import strip_wp_size_suffix
 from src.parsing.youtube import create_youtube_shortcode
 
@@ -101,6 +102,17 @@ class WPMarkdownConverter(MarkdownConverter):
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
+
+    def convert_div(self, el: Tag, text: str, parent_tags: set) -> str:
+        """Keep `<div>` tags with the specified classes in `KEEP_CUSTOM_DIV_CLASSES`;
+        otherwise strip them (normal `MarkdownConverter` behavior.)
+        """
+        classes = el.get("class", [])
+        matched_classes = set(classes).intersection(set(KEEP_CUSTOM_DIV_CLASSES))
+        if matched_classes:
+            class_str = " ".join(matched_classes)
+            return f'<div class="{class_str}">\n\n{text}\n</div>\n'
+        return super().convert_div(el, text, parent_tags)
 
 
 def get_default_markdown_converter() -> WPMarkdownConverter:

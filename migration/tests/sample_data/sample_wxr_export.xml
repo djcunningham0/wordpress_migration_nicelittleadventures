@@ -92,16 +92,14 @@
 <!-- /wp:paragraph -->
 
 <!-- wp:html -->
-<div class="author-danny">
-<p>I had been eyeing this route for about three years. The approach looked
-straightforward on paper, which should have been the first warning sign.</p>
+<div class="fixture-author-1">
+<p>A sentence. Another sentence.</p>
 </div>
 <!-- /wp:html -->
 
 <!-- wp:html -->
-<div class="author-siyang">
-<p>Danny neglected to mention that "straightforward on paper" meant nine hours
-of talus. I want that on the record.</p>
+<div class="fixture-author-2">
+<p>Second author sentence.</p>
 </div>
 <!-- /wp:html -->
 

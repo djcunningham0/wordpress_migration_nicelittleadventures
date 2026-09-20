@@ -4,13 +4,9 @@ These run against the whole fixture document, because namespace resolution,
 post_type filtering and postmeta lookups only mean anything in context.
 """
 
-import json
-
 import pytest
 
 from src.parsing.wordpress_parser import parse_wordpress_xml
-
-pytestmark = pytest.mark.usefixtures("no_author_overrides")
 
 
 # --------------------------------------------------------------------------
@@ -122,7 +118,10 @@ class TestAuthors:
         assert posts["103"].author == "Danny C"  # override also normalizes the fallback
 
     def test_author_override_of_unknown_name_is_noop(self, xml_path, monkeypatch):
-        monkeypatch.setenv("AUTHOR_OVERRIDES", json.dumps({"Nobody": "Someone"}))
+        monkeypatch.setattr(
+            "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
+            {"Nobody": "Someone"},
+        )
         posts = {p.id_: p for p in parse_wordpress_xml(xml_path)}
         assert posts["102"].author == "Danny"
 
@@ -201,3 +200,15 @@ class TestEmbeds:
     def test_youtube_embed_is_converted_to_shortcode(self, posts_by_id):
         markdown = posts_by_id["102"].markdown
         assert "{{< youtube aqz-KE-bpKQ >}}" in markdown
+
+
+# --------------------------------------------------------------------------
+# custom div classes
+# --------------------------------------------------------------------------
+
+
+class TestCustomDivs:
+    def test_custom_divs_are_kept(self, posts_by_id):
+        markdown = posts_by_id["101"].markdown
+        assert '<div class="fixture-author-1"' in markdown
+        assert '<div class="fixture-author-2"' in markdown

@@ -13,6 +13,7 @@ if XML_PATH is None:
 
 SITE_URL = "https://nicelittleadventures.com"
 
+AUTHOR_OVERRIDES = {"siyangsun": "Siyang"}
 SKIP_IDS = [
     2,  # Posts
     7,  # Contact
@@ -21,4 +22,11 @@ SKIP_IDS = [
     1693,  # MailPoet confirmation
     2286,  # Home
 ]
-AUTHOR_OVERRIDES = {"siyangsun": "Siyang"}
+
+# keep `<div>` tags with these classes when converting HTML to markdown (normally,
+# `<div>` tags are stripped out)
+KEEP_CUSTOM_DIV_CLASSES = [
+    "author-danny",
+    "author-siyang",
+    "author-sean",
+]
