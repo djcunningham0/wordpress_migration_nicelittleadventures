@@ -11,11 +11,11 @@ import mdformat
 from bs4 import NavigableString, Tag
 from lxml import etree
 from markdownify import MarkdownConverter
-from slugify import slugify
 
 from src.config import AUTHOR_OVERRIDES
 from src.parsing.excerpts import parse_custom_excerpt
 from src.parsing.images import strip_wp_size_suffix
+from src.parsing.slugs import create_unique_slug
 from src.parsing.youtube import create_youtube_shortcode
 
 
@@ -218,24 +218,6 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
         _excerpt=excerpt,
         _footnotes_json=footnotes_json,
     )
-
-
-def create_unique_slug(slug: str, used_slugs: set[str]):
-    """Force slugs to a common format (lowercase, hyphenated), and make sure they are
-    unique among previously seen slugs. Add an incrementing number if the slug has
-    previously been seen."""
-    slug = slugify(slug)
-    if slug not in used_slugs:
-        used_slugs.add(slug)
-        return slug
-
-    n = 2
-    while f"{slug}-{n}" in used_slugs:
-        n += 1
-
-    out = f"{slug}-{n}"
-    used_slugs.add(out)
-    return out
 
 
 def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:
