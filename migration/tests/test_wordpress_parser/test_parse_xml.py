@@ -21,7 +21,8 @@ pytestmark = pytest.mark.usefixtures("no_author_overrides")
 class TestDocumentLevel:
     def test_parses_only_posts_and_pages(self, posts):
         """Attachments must not become Posts."""
-        assert {p.id_ for p in posts} == {"101", "102", "103", "104", "105", "106", "5"}
+        expected = {"101", "102", "103", "104", "105", "106", "5", "999"}
+        assert {p.id_ for p in posts} == expected
 
     def test_post_types(self, posts_by_id):
         assert posts_by_id["101"].post_type == "post"
@@ -29,13 +30,25 @@ class TestDocumentLevel:
 
     def test_skip_ids_excludes_posts(self, xml_path):
         posts = wp.parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
-        assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106"}
+        assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106", "999"}
 
     def test_skip_ids_default_is_not_shared_between_calls(self, xml_path):
         """Guards against a mutable-default regression if `skip_ids=[]` ever creeps in."""
         first = wp.parse_wordpress_xml(xml_path)
         second = wp.parse_wordpress_xml(xml_path)
         assert {p.id_ for p in first} == {p.id_ for p in second}
+
+    def test_draft_post_gets_slug_from_title(self, posts_by_id):
+        """Draft posts don't have real slugs on Wordpress (empty `wp:post_name`), so we
+        have to use the post title to generate a slug. This test makes sure we are doing
+        that and not leaving the slug blank.
+        """
+        assert posts_by_id["103"].slug == "untitled-draft"
+
+    def test_duplicate_slugs_are_made_unique(self, posts_by_id):
+        # these two draft posts have the same title
+        assert posts_by_id["103"].slug == "untitled-draft"
+        assert posts_by_id["999"].slug == "untitled-draft-2"
 
 
 # --------------------------------------------------------------------------

@@ -2,6 +2,7 @@ import html
 import json
 import logging
 import re
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -11,6 +12,7 @@ import mdformat
 from bs4 import BeautifulSoup, NavigableString, Tag
 from lxml import etree
 from markdownify import MarkdownConverter
+from slugify import slugify
 
 from config import AUTHOR_OVERRIDES
 
@@ -32,6 +34,8 @@ FOOTNOTE_PLACEHOLDER_RE = re.compile(
     r'<sup[^>]*data-fn="([0-9a-f-]+)"[^>]*>.*?</sup>',
     re.DOTALL,
 )
+
+USED_SLUGS: set[str] = set()
 
 
 @dataclass
@@ -219,7 +223,18 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
     status = item.findtext("wp:status", namespaces=nsmap)
     title = item.findtext("title")
     id_ = item.findtext("wp:post_id", namespaces=nsmap)
+
     slug = item.findtext("wp:post_name", namespaces=nsmap)
+    if not slug:
+        slug = title  # example: draft posts don't have slugs
+    if not slug:
+        warnings.warn(
+            f"Found empty slug for post {id_}. Generating a new slug with root 'empty-slug"
+        )
+        slug = "empty-slug"
+
+    slug = create_unique_slug(slug, used_slugs=USED_SLUGS)
+
     author = _parse_authors(item, nsmap)
     content = item.findtext("content:encoded", namespaces=nsmap)
     date = item.findtext("wp:post_date", namespaces=nsmap)
@@ -250,6 +265,24 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
         _excerpt=excerpt,
         _footnotes_json=footnotes_json,
     )
+
+
+def create_unique_slug(slug: str, used_slugs: set[str]):
+    """Force slugs to a common format (lowercase, hyphenated), and make sure they are
+    unique among previously seen slugs. Add an incrementing number if the slug has
+    previously been seen."""
+    slug = slugify(slug)
+    if slug not in used_slugs:
+        used_slugs.add(slug)
+        return slug
+
+    n = 2
+    while f"{slug}-{n}" in used_slugs:
+        n += 1
+
+    out = f"{slug}-{n}"
+    used_slugs.add(out)
+    return out
 
 
 def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:
