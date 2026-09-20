@@ -1,3 +1,10 @@
+"""
+From the `migration/` directory:
+
+    uv run python -m src.migrate [--arg1 val --arg2 val]
+"""
+
+
 import argparse
 import logging
 import os
@@ -6,8 +13,8 @@ from pathlib import Path
 
 from lxml import etree
 
-import config
-from wordpress_parser import parse_wordpress_xml
+from src import config
+from src.parsing.wordpress_parser import parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
 

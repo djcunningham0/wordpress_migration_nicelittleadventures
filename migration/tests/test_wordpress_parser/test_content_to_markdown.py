@@ -13,7 +13,7 @@ Assert the thing you actually care about.
 import pytest
 from bs4 import BeautifulSoup
 
-from wordpress_parser import (
+from src.parsing.wordpress_parser import (
     MarkdownOutput,
     content_to_markdown,
     create_unique_slug,

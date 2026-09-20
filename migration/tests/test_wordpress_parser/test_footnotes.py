@@ -1,8 +1,6 @@
 """Footnote marker replacement, numbering and definition rendering."""
 
-import pytest
-
-from wordpress_parser import (
+from src.parsing.wordpress_parser import (
     content_to_markdown,
     replace_footnote_markers_with_placeholders,
     resolve_footnotes,

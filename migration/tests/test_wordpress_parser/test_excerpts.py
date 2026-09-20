@@ -1,4 +1,4 @@
-from wordpress_parser import normalize, parse_custom_excerpt
+from src.parsing.wordpress_parser import normalize, parse_custom_excerpt
 
 
 class TestParseCustomExcerpt:

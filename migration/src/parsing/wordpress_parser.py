@@ -14,7 +14,7 @@ from lxml import etree
 from markdownify import MarkdownConverter
 from slugify import slugify
 
-from config import AUTHOR_OVERRIDES
+from src.config import AUTHOR_OVERRIDES
 
 
 logger = logging.getLogger(__name__)

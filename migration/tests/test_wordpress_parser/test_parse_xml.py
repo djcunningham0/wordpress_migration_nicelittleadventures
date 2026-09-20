@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-import wordpress_parser as wp
+import src.parsing.wordpress_parser as wp
 
 pytestmark = pytest.mark.usefixtures("no_author_overrides")
 
@@ -113,7 +113,7 @@ class TestAuthors:
 
     def test_author_overrides_applied(self, xml_path, monkeypatch):
         monkeypatch.setattr(
-            "wordpress_parser.AUTHOR_OVERRIDES",
+            "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
             {"Danny": "Danny C", "danny": "Danny C"},
         )
         posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}

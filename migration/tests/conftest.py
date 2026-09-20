@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
-import wordpress_parser as wp
+import src.parsing.wordpress_parser as wp
 
 DATA_DIR = Path(__file__).parent / "sample_data"
 SAMPLE_XML = DATA_DIR / "sample_wxr_export.xml"
@@ -49,4 +49,4 @@ def no_author_overrides(monkeypatch):
     """Disable author overrides for tests; otherwise we may get unexpected failures if
     overrides happen to appear in test data.
     """
-    monkeypatch.setattr("config.XML_PATH", {})
+    monkeypatch.setattr("src.config.XML_PATH", {})
