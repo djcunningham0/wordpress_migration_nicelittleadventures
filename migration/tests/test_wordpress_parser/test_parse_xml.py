@@ -8,7 +8,7 @@ import json
 
 import pytest
 
-import src.parsing.wordpress_parser as wp
+from src.parsing.wordpress_parser import parse_wordpress_xml
 
 pytestmark = pytest.mark.usefixtures("no_author_overrides")
 
@@ -29,13 +29,13 @@ class TestDocumentLevel:
         assert posts_by_id["5"].post_type == "page"
 
     def test_skip_ids_excludes_posts(self, xml_path):
-        posts = wp.parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
+        posts = parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
         assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106", "999"}
 
     def test_skip_ids_default_is_not_shared_between_calls(self, xml_path):
         """Guards against a mutable-default regression if `skip_ids=[]` ever creeps in."""
-        first = wp.parse_wordpress_xml(xml_path)
-        second = wp.parse_wordpress_xml(xml_path)
+        first = parse_wordpress_xml(xml_path)
+        second = parse_wordpress_xml(xml_path)
         assert {p.id_ for p in first} == {p.id_ for p in second}
 
     def test_draft_post_gets_slug_from_title(self, posts_by_id):
@@ -116,14 +116,14 @@ class TestAuthors:
             "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
             {"Danny": "Danny C", "danny": "Danny C"},
         )
-        posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
+        posts = {p.id_: p for p in parse_wordpress_xml(xml_path)}
         assert posts["102"].author == "Danny C"
         assert posts["101"].author == ["Danny C", "Siyang"]
         assert posts["103"].author == "Danny C"  # override also normalizes the fallback
 
     def test_author_override_of_unknown_name_is_noop(self, xml_path, monkeypatch):
         monkeypatch.setenv("AUTHOR_OVERRIDES", json.dumps({"Nobody": "Someone"}))
-        posts = {p.id_: p for p in wp.parse_wordpress_xml(xml_path)}
+        posts = {p.id_: p for p in parse_wordpress_xml(xml_path)}
         assert posts["102"].author == "Danny"
 
 

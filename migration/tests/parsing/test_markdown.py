@@ -1,25 +1,14 @@
-"""HTML -> markdown conversion.
-
-These use inline snippets rather than the XML fixture: the input sits next to
-the assertion, which is what you want when you're adding a case every time you
-discover a new block type in the real export.
-
-Assertions are deliberately loose (substring / "is present") rather than exact
-full-document equality. Exact-match tests on markdownify + mdformat output break
-on every dependency bump for reasons that have nothing to do with your code.
-Assert the thing you actually care about.
-"""
-
 import pytest
 from bs4 import BeautifulSoup
 
-from src.parsing.wordpress_parser import (
+from src.parsing.markdown import (
     MarkdownOutput,
     content_to_markdown,
-    create_unique_slug,
     replace_footnote_markers_with_placeholders,
     resolve_footnotes,
 )
+
+import pytest
 
 
 def convert(html: str) -> MarkdownOutput:
@@ -274,7 +263,7 @@ class TestQuotes:
 
 
 # --------------------------------------------------------------------------
-# author divs (custom handling hook)
+# custom div handling
 # --------------------------------------------------------------------------
 
 
