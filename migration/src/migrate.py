@@ -4,7 +4,6 @@ From the `migration/` directory:
     uv run python -m src.migrate [--arg1 val --arg2 val]
 """
 
-
 import argparse
 import logging
 import os
