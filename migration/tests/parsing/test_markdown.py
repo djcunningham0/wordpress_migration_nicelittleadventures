@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from src.parsing.markdown import (
     MarkdownOutput,
     content_to_markdown,
+    prettify_markdown,
     replace_footnote_markers_with_placeholders,
     resolve_footnotes,
 )
@@ -37,6 +38,7 @@ class TestBasics:
             ("<blockquote><p>A quote.</p></blockquote>", "> A quote."),
             ("<code>Inline code</code>", "`Inline code`"),
             ("<pre><code>Code block</code></pre>", "```\nCode block\n```"),
+            ("<hr>", "---"),
         ],
     )
     def test_basic_blocks(self, html, expected):
@@ -64,7 +66,7 @@ class TestFigures:
     def test_keep_figure_with_two_newlines_around_img(self):
         html = '<figure><img src="https://example.com/a.jpg"></figure>'
         out = convert(html).markdown
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>\n'
+        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>'
         assert out == expected
 
     def test_keep_figure_with_two_newlines_around_video(self):
@@ -72,14 +74,12 @@ class TestFigures:
             '<figure><video controls src="https://example.com/a.mov"></video></figure>'
         )
         out = convert(html).markdown
-        expected = '<figure>\n\n<video controls src="https://example.com/a.mov"></video>\n\n</figure>\n'
-        print(f"     {out=}")
-        print(f"{expected=}")
+        expected = '<figure>\n\n<video controls src="https://example.com/a.mov"></video>\n\n</figure>'
         assert out == expected
 
     def test_strip_figure_with_no_relevant_tags(self):
         html = "<figure><p>just some text</p></figure>"
-        assert convert(html).markdown == "just some text\n"
+        assert convert(html).markdown == "just some text"
 
     def test_keep_figure_with_figcaption(self):
         html = "<figure><p>some text</p><figcaption>and a caption</figcaption></figure>"
@@ -88,7 +88,7 @@ class TestFigures:
             "<figure>\n\n"
             "some text\n\n"
             "<figcaption>\n\nand a caption\n\n</figcaption>\n\n"
-            "</figure>\n"
+            "</figure>"
         )
         assert out == expected
 
@@ -96,7 +96,7 @@ class TestFigures:
 class TestFigcaption:
     def test_two_newlines_around_figcaption(self):
         html = "<figcaption>some text</figcaption>"
-        assert convert(html).markdown == "<figcaption>\n\nsome text\n\n</figcaption>\n"
+        assert convert(html).markdown == "<figcaption>\n\nsome text\n\n</figcaption>"
 
     def test_figcaption_text_is_converted_to_markdown(self):
         html = (
@@ -108,7 +108,7 @@ class TestFigcaption:
         expected = (
             "<figcaption>\n\n"
             "some **bold** and *italic* text with a [link](https://example.com)\n\n"
-            "</figcaption>\n"
+            "</figcaption>"
         )
         assert out == expected
 
@@ -126,7 +126,7 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>\n'
+        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>'
         assert out.markdown == expected
 
     def test_alt_text_is_preserved(self):
@@ -136,7 +136,7 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg" alt="Alt text">\n\n</figure>\n'
+        expected = '<figure>\n\n<img src="https://example.com/a.jpg" alt="Alt text">\n\n</figure>'
         assert out.markdown == expected
 
     def test_image_keeps_caption(self):
@@ -151,7 +151,7 @@ class TestImages:
             "<figure>\n\n"
             '<img src="https://example.com/a.jpg">\n'
             "<figcaption>\n\nA caption.\n\n</figcaption>\n\n"
-            "</figure>\n"
+            "</figure>"
         )
 
     def test_self_linking_image_removes_link(self):
@@ -166,7 +166,7 @@ class TestImages:
         expected = (
             "<figure>\n\n"
             '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg">\n\n'
-            "</figure>\n"
+            "</figure>"
         )
         assert out.markdown == expected
 
@@ -215,7 +215,7 @@ class TestEmbeds:
         )
         out = convert(iframe_block).markdown
         assert out.startswith("<iframe ")
-        assert out.endswith("</iframe>\n")
+        assert out.endswith("</iframe>")
 
         # `convert_iframe` won't preserve attribute order, so that each element is
         # preserved rather than checking an exact string
@@ -240,7 +240,7 @@ class TestEmbeds:
             "<figure>\n\n"
             '<iframe src="https://caltopo.com/m/ABC123"></iframe>\n'
             "<figcaption>\n\na caption\n\n</figcaption>\n\n"
-            "</figure>\n"
+            "</figure>"
         )
         assert out == expected
 
@@ -254,7 +254,7 @@ class TestEmbeds:
         assert out.markdown == (
             "<figure>\n\n"
             '<video controls src="https://example.com/flyover.mp4"></video>\n\n'
-            "</figure>\n"
+            "</figure>"
         )
 
     def test_youtube_embed_is_converted_to_hugo_shortcode(self):
@@ -265,7 +265,7 @@ class TestEmbeds:
             "</div></figure>"
         )
         out = convert(html).markdown
-        expected = "{{< youtube aqz-KE-bpKQ >}}\n"
+        expected = "{{< youtube aqz-KE-bpKQ >}}"
         assert out == expected
 
     def test_youtube_embed_with_caption(self):
@@ -283,9 +283,9 @@ class TestEmbeds:
         out = convert(html).markdown
         expected = (
             "<figure>\n\n"
-            "{{< youtube PoIngwoBW-Q >}}\n\n"
+            "{{< youtube PoIngwoBW-Q >}}\n"
             "<figcaption>\n\nView from afar of their line... they got stuck a few times\n\n</figcaption>\n\n"
-            "</figure>\n"
+            "</figure>"
         )
         assert out == expected
 
@@ -297,9 +297,7 @@ class TestEmbeds:
             "</div></figure>"
         )
         out = convert(html).markdown
-        expected = (
-            "[https://unsupported_website.com](https://unsupported_website.com)\n"
-        )
+        expected = "[https://unsupported_website.com](https://unsupported_website.com)"
         assert out == expected
 
 
@@ -335,6 +333,48 @@ class TestTables:
         assert "No header row" in out
         assert "on this one" in out
         assert "body cells" in out
+
+    def test_table_pipes_are_aligned(self):
+        html = (
+            '<figure>'
+            '<table>'
+            "<thead><tr><th>col 1</th><th>col 2</th></tr></thead>"
+            "<tbody><tr><td>x</td><td>y</td></tr>"
+            "<tr><td>z</td><td>longer value</td></tr></tbody>"
+            '</table>'
+            '</figure>'
+        )
+        expected = (
+            "| col 1 | col 2        |\n"
+            "| ----- | ------------ |\n"
+            "| x     | y            |\n"
+            "| z     | longer value |"
+        )
+        out = convert(html).markdown
+        assert out == expected
+
+    def test_table_pipes_are_aligned_and_keeps_caption(self):
+        html = (
+            '<figure>'
+            '<table>'
+            "<thead><tr><th>col 1</th><th>col 2</th></tr></thead>"
+            "<tbody><tr><td>x</td><td>y</td></tr>"
+            "<tr><td>z</td><td>longer value</td></tr></tbody>"
+            '</table>'
+            '<figcaption>a caption</figcaption>'
+            '</figure>'
+        )
+        expected = (
+            "<figure>\n\n"
+            "| col 1 | col 2        |\n"
+            "| ----- | ------------ |\n"
+            "| x     | y            |\n"
+            "| z     | longer value |\n"
+            "<figcaption>\n\na caption\n\n</figcaption>\n\n"
+            "</figure>"
+        )
+        out = convert(html).markdown
+        assert out == expected
 
 
 # --------------------------------------------------------------------------
@@ -380,7 +420,7 @@ class TestAuthorDivs:
             "</div>\n"
             '<div class="fixture-author-2">\n\n'
             "The other says another thing.\n\n"
-            "</div>\n"
+            "</div>"
         )
         assert out == expected
 
@@ -390,7 +430,7 @@ class TestAuthorDivs:
             '<div class="fixture-author-9"><p>The other says another thing.</p></div>'
         )
         out = convert(html).markdown
-        expected = "One of us says a thing.\n\nThe other says another thing.\n"
+        expected = "One of us says a thing.\n\nThe other says another thing."
         assert out == expected
 
     def test_only_keeps_specified_div(self):
@@ -403,7 +443,7 @@ class TestAuthorDivs:
             '<div class="fixture-author-1">\n\n'
             "One of us says a thing.\n\n"
             "</div>\n\n"
-            "Another sentence.\n"
+            "Another sentence."
         )
         assert out == expected
 
@@ -535,3 +575,36 @@ class TestDegenerateInput:
         assert out.markdown == ""
         assert out.images == set()
         assert out.videos == set()
+
+
+# --------------------------------------------------------------------------
+# prettify markdown
+# --------------------------------------------------------------------------
+
+
+class TestPrettifyMarkdown:
+    def test_removes_excessive_newlines(self):
+        markdown = (
+            "Line 1."
+            "\n\n\n"
+            "Line 2. Two sentences."
+            "\n\n"
+            "Line 3."
+            "\n"
+            "Continuation of line 3"
+            "\n\n\n\n\n\n\n\n\n"
+            "Last line."
+        )
+        expected = (
+            "Line 1."
+            "\n\n"
+            "Line 2. Two sentences."
+            "\n\n"
+            "Line 3."
+            "\n"
+            "Continuation of line 3"
+            "\n\n"
+            "Last line."
+        )
+        out = prettify_markdown(markdown)
+        assert out == expected

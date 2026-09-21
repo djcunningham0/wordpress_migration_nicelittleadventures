@@ -86,16 +86,20 @@ class WPMarkdownConverter(MarkdownConverter):
         return f"<figcaption>\n\n{text.strip()}\n\n</figcaption>\n"
 
     def convert_a(self, el: Tag, text: str, parent_tags: set) -> str:
+        # Self-linking image: <a href="..."><img/></a> with nothing else inside. These
+        # are handled by `self.convert_img`, so no additional processing needed here.
         children = [
             c
             for c in el.children
             if not (isinstance(c, NavigableString) and not c.strip())
         ]
-
-        # Self-linking image: <a href="..."><img/></a> with nothing else inside. These
-        # are handled by `self.convert_img`, so no additional processing needed here.
         if len(children) == 1 and getattr(children[0], "name", None) == "img":
             return text + "\n"
+
+        # relative links (identified via `data-type="post"` or `"page"`)
+        if el.get("data-type") in ["post", "page"]:
+            # el["href"] = ...  # TODO
+            ...
 
         return super().convert_a(el, text, parent_tags)
 
@@ -108,7 +112,7 @@ class WPMarkdownConverter(MarkdownConverter):
         """
         child_types = {x.name for x in el.find_all()}
         if any(x in child_types for x in ["img", "video", "figcaption"]):
-            return f"<figure>\n\n{text.strip()}\n\n</figure>"
+            return f"<figure>\n\n{text.strip()}\n\n</figure>\n"
         return text + "\n"
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
@@ -154,6 +158,13 @@ class WPMarkdownConverter(MarkdownConverter):
 
         return super().convert_div(el, text, parent_tags)
 
+    def convert_table(self, el: Tag, text: str, parent_tags: set) -> str:
+        """Align pipes in markdown tables using `mdformat-gfm`. Only run on tables
+        rather than the whole markdown file to prevent other unwanted changes.
+        """
+        out = super().convert_table(el, text, parent_tags)
+        return mdformat.text(out, extensions=["gfm"])
+
 
 def get_default_markdown_converter() -> WPMarkdownConverter:
     return WPMarkdownConverter(**MARKDOWNIFY_ARGS)
@@ -172,13 +183,7 @@ def content_to_markdown(
     converter = get_default_markdown_converter()
     markdown = converter.convert(html_content).strip()
     markdown = resolve_footnotes(markdown, footnotes_json)
-
-    # prettify markdown
-    markdown = mdformat.text(
-        markdown,
-        options={"wrap": "keep", "number": True},
-        extensions=["footnote", "simple_breaks", "frontmatter", "gfm"],
-    )
+    markdown = prettify_markdown(markdown)
 
     return MarkdownOutput(
         markdown=markdown, images=converter.images, videos=converter.videos
@@ -220,3 +225,8 @@ def resolve_footnotes(markdown: str, footnotes: list[dict]) -> str:
         definitions.append(f"[^{n}]: {content_md}")
 
     return body + "\n\n" + "\n".join(definitions)
+
+
+def prettify_markdown(text: str) -> str:
+    out = re.sub(r'\n{3,}', '\n\n', text)  # collapse 3+ newlines to 2
+    return out
