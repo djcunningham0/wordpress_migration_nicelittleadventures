@@ -95,23 +95,49 @@ class WPMarkdownConverter(MarkdownConverter):
         return super().convert_a(el, text, parent_tags)
 
     def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
-        inner = text.strip("\n")
-        if "is-provider-youtube" in el.get("class", []):
-            return create_youtube_shortcode(inner)
-        return f"<figure>\n{inner}\n</figure>\n"
+        """Keep all figure tags."""
+        return f"<figure>\n{text.strip()}\n</figure>"
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
 
     def convert_div(self, el: Tag, text: str, parent_tags: set) -> str:
-        """Keep `<div>` tags with the specified classes in `KEEP_CUSTOM_DIV_CLASSES`;
+        """In general, strip `<div>` tags. But apply special processing to the following
+        cases:
+
+        ### custom div classes ###
+        If a `<div>` has a class listed in `config.KEEP_CUSTOM_DIV_CLASSES`, keep it.
+        These custom div classes are used for formatting.
+
+        ### embeds ###
+        If the `<div>` has a "wp-block-embed__wrapper" class, it is an embedded URL. If
+        it is a YouTube URL, convert to a Hugo shortcode. Otherwise convert to a
+        hyperlink. (Note: generally, putting the exact URL in an <iframe> will not work;
+        that's why we're leaving it as a hyperlink.)
+
+        Keep `<div>` tags with the specified classes in `KEEP_CUSTOM_DIV_CLASSES`;
         otherwise strip them (normal `MarkdownConverter` behavior.)
         """
         classes = el.get("class", [])
+
         matched_classes = set(classes).intersection(set(KEEP_CUSTOM_DIV_CLASSES))
         if matched_classes:
             class_str = " ".join(matched_classes)
             return f'<div class="{class_str}">\n\n{text}\n</div>\n'
+
+        if "wp-block-embed__wrapper" in classes:
+            # youtube is straightforward to handle: rely on the Hugo shortcode
+            if "is-provider-youtube" in el.parent.get("class", []):
+                return create_youtube_shortcode(el.text) + "\n"
+
+            # otherwise, return a hyperlink to the URL
+            else:
+                hyperlink = Tag(name="a", attrs={"href": el.text.strip()})
+                hyperlink.string = el.text.strip()
+                # return hyperlink in HTML format rather than markdown format because
+                # these divs are usually (always?) nested inside `<figure>` tags
+                return str(hyperlink)
+
         return super().convert_div(el, text, parent_tags)
 
 

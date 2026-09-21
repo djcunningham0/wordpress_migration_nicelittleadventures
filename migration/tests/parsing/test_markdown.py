@@ -200,7 +200,45 @@ class TestEmbeds:
             "https://www.youtube.com/watch?v=aqz-KE-bpKQ\n"
             "</div></figure>"
         )
-        assert "{{< youtube aqz-KE-bpKQ >}}" in convert(html).markdown
+        out = convert(html).markdown
+        assert out == "<figure>\n{{< youtube aqz-KE-bpKQ >}}\n</figure>\n"
+
+    def test_youtube_embed_with_caption(self):
+        html = (
+            '<div class="wp-block-column" style="flex-basis:27.27%">'
+            '<!-- wp:embed {"url":"https://youtu.be/PoIngwoBW-Q","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-4-3 wp-has-aspect-ratio"} -->'
+            '<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-4-3 wp-has-aspect-ratio">'
+            '<div class="wp-block-embed__wrapper">'
+            'https://youtu.be/PoIngwoBW-Q'
+            '</div>'
+            '<figcaption class="wp-element-caption">View from afar of their line... they got stuck a few times</figcaption>'
+            '</figure>'
+            '<!-- /wp:embed --></div>'
+        )
+        out = convert(html).markdown
+        expected = (
+            '<figure>\n'
+            '{{< youtube PoIngwoBW-Q >}}\n'
+            '<figcaption>View from afar of their line... they got stuck a few times</figcaption>\n'
+            '</figure>\n'
+        )
+        assert out == expected
+
+    def test_other_embeds_are_converted_to_hyperlinks(self):
+        html = (
+            '<figure class="wp-block-embed is-provider-unsupported-website">'
+            '<div class="wp-block-embed__wrapper">\n'
+            "https://unsupported_website.com\n"
+            "</div></figure>"
+        )
+        out = convert(html).markdown
+        expected = (
+            '<figure>\n'
+            '<a href="https://unsupported_website.com">https://unsupported_website.com</a>\n'
+            '</figure>\n'
+        )
+        assert out == expected
+
 
 
 # --------------------------------------------------------------------------
