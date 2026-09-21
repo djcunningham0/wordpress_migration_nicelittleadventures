@@ -13,7 +13,7 @@ from pathlib import Path
 from lxml import etree
 
 from src import config
-from src.parsing.wordpress_parser import parse_wordpress_xml
+from src.parsing.wordpress_parser import Post, parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,24 @@ def migrate(
         if post_file_path.exists() and not overwrite_individual:
             logger.info(f"Skipping existing file: {post_file_path}")
             continue
+
         with open(post_file_path, "w", encoding="utf-8") as f:
             f.write(post.markdown)
         logger.info(f"Wrote {post_file_path}")
+
+        copy_images_for_post(post, post_dir)
+
+
+def copy_images_for_post(post: Post, post_dir: Path):
+    images_and_videos = post.images.union(post.videos)
+
+    for file in images_and_videos:
+        local_path = Path(file.replace(config.WP_MEDIA_DIR, config.MEDIA_DIR))
+        if not local_path.exists():
+            logger.warning(f"missing media file: {file}; post: {post.title}")
+            continue
+
+        shutil.copy(local_path, post_dir)
 
 
 def parse_paths(xml_name: str = None, target_dir_name: str = None) -> tuple[Path, Path]:

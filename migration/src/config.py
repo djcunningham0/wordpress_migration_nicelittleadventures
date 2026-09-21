@@ -6,12 +6,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 XML_PATH = os.getenv("XML_PATH")
+MEDIA_DIR = "./wp_migration_files/uploads"
 HUGO_TARGET_DIR = ".."
 
 if XML_PATH is None:
     warnings.warn("XML_PATH is not set in `.env`")
 
 SITE_URL = "https://nicelittleadventures.com"
+WP_MEDIA_DIR = "https://nicelittleadventures.com/wp-content/uploads"
 
 AUTHOR_OVERRIDES = {"siyangsun": "Siyang"}
 SKIP_IDS = [
