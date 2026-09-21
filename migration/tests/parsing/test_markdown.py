@@ -54,6 +54,7 @@ class TestBasics:
         assert result.markdown.startswith("# Title")
         assert "===" not in result.markdown
 
+
 # --------------------------------------------------------------------------
 # figures
 # --------------------------------------------------------------------------
@@ -61,47 +62,32 @@ class TestBasics:
 
 class TestFigures:
     def test_keep_figure_with_two_newlines_around_img(self):
-        html = (
-            '<figure>'
-            '<img src="https://example.com/a.jpg">'
-            "</figure>"
-        )
+        html = '<figure><img src="https://example.com/a.jpg"></figure>'
         out = convert(html).markdown
         expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>\n'
         assert out == expected
 
     def test_keep_figure_with_two_newlines_around_video(self):
-            html = (
-                '<figure>'
-                '<video controls src="https://example.com/a.mov"></video>'
-                "</figure>"
-            )
-            out = convert(html).markdown
-            expected = '<figure>\n\n<video controls src="https://example.com/a.mov"></video>\n\n</figure>\n'
-            print(f"     {out=}")
-            print(f"{expected=}")
-            assert out == expected
+        html = (
+            '<figure><video controls src="https://example.com/a.mov"></video></figure>'
+        )
+        out = convert(html).markdown
+        expected = '<figure>\n\n<video controls src="https://example.com/a.mov"></video>\n\n</figure>\n'
+        print(f"     {out=}")
+        print(f"{expected=}")
+        assert out == expected
 
     def test_strip_figure_with_no_relevant_tags(self):
-        html = (
-            '<figure>'
-            '<p>just some text</p>'
-            "</figure>"
-        )
+        html = "<figure><p>just some text</p></figure>"
         assert convert(html).markdown == "just some text\n"
 
     def test_keep_figure_with_figcaption(self):
-        html = (
-            '<figure>'
-            '<p>some text</p>'
-            '<figcaption>and a caption</figcaption>'
-            "</figure>"
-        )
+        html = "<figure><p>some text</p><figcaption>and a caption</figcaption></figure>"
         out = convert(html).markdown
         expected = (
-            '<figure>\n\n'
-            'some text\n\n'
-            '<figcaption>\n\nand a caption\n\n</figcaption>\n\n'
+            "<figure>\n\n"
+            "some text\n\n"
+            "<figcaption>\n\nand a caption\n\n</figcaption>\n\n"
             "</figure>\n"
         )
         assert out == expected
@@ -125,6 +111,7 @@ class TestFigcaption:
             "</figcaption>\n"
         )
         assert out == expected
+
 
 # --------------------------------------------------------------------------
 # images
@@ -287,18 +274,18 @@ class TestEmbeds:
             '<!-- wp:embed {"url":"https://youtu.be/PoIngwoBW-Q","type":"video","providerNameSlug":"youtube","responsive":true,"className":"wp-embed-aspect-4-3 wp-has-aspect-ratio"} -->'
             '<figure class="wp-block-embed is-type-video is-provider-youtube wp-block-embed-youtube wp-embed-aspect-4-3 wp-has-aspect-ratio">'
             '<div class="wp-block-embed__wrapper">'
-            'https://youtu.be/PoIngwoBW-Q'
-            '</div>'
+            "https://youtu.be/PoIngwoBW-Q"
+            "</div>"
             '<figcaption class="wp-element-caption">View from afar of their line... they got stuck a few times</figcaption>'
-            '</figure>'
-            '<!-- /wp:embed --></div>'
+            "</figure>"
+            "<!-- /wp:embed --></div>"
         )
         out = convert(html).markdown
         expected = (
-            '<figure>\n\n'
-            '{{< youtube PoIngwoBW-Q >}}\n\n'
-            '<figcaption>\n\nView from afar of their line... they got stuck a few times\n\n</figcaption>\n\n'
-            '</figure>\n'
+            "<figure>\n\n"
+            "{{< youtube PoIngwoBW-Q >}}\n\n"
+            "<figcaption>\n\nView from afar of their line... they got stuck a few times\n\n</figcaption>\n\n"
+            "</figure>\n"
         )
         assert out == expected
 
@@ -310,9 +297,10 @@ class TestEmbeds:
             "</div></figure>"
         )
         out = convert(html).markdown
-        expected = '[https://unsupported_website.com](https://unsupported_website.com)\n'
+        expected = (
+            "[https://unsupported_website.com](https://unsupported_website.com)\n"
+        )
         assert out == expected
-
 
 
 # --------------------------------------------------------------------------
