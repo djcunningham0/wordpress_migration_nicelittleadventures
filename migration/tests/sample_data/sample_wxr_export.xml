@@ -6,16 +6,21 @@
     101  Multi-author post (danny + siyang), author-* divs, featured image
          (_thumbnail_id -> 201), self-linking images, columns WITH explicit
          widths, one footnote, custom excerpt (subtitle + excerpt).
+         Also contains an internal link to another post (data-type/data-id).
     102  Single author: iframe in wp:html, self-hosted video, YouTube embed,
-         standalone image, columns WITHOUT explicit widths.
+         standalone image, columns WITHOUT explicit widths. Contains an
+         internal link to post 101, and a DANGLING internal link (points at
+         a post id that does not exist in this export).
+    106  Table post (wp:table with thead/tbody + caption), plus a list.
+         Also contains an internal link to page 5 (post -> page).
     103  Minimal DRAFT: no author category (dc:creator fallback), no
          categories/tags/footnotes, empty post_name, empty excerpt.
     104  _thumbnail_id points at a MISSING attachment (250). status=pending.
     105  Footnote-heavy post: 3 markers, one id referenced TWICE, one marker
          whose id is absent from the footnotes JSON, and JSON ordered
          differently from appearance order.
-    106  Table post (wp:table with thead/tbody + caption), plus a list.
     5    Page: pull quote, block quote, custom excerpt. post_type=page.
+         Linked TO from post 106 (post -> page).
     201  Attachment: featured image for post 101.
     202  Attachment: in-content image + featured image for 102 (appears AFTER
          the post that references it, on purpose).
@@ -72,6 +77,7 @@
     <!-- =====================================================================
          101: Multi-author. Featured image, author-* divs, self-linking
          images, columns with EXPLICIT widths, custom excerpt, 1 footnote.
+         Also: internal link to another post via data-type/data-id.
          ================================================================== -->
     <item>
         <title>Sawtooth Traverse Part 1: Hiking the Sawtooth High Route</title>
@@ -129,6 +135,10 @@
 
 <!-- wp:paragraph -->
 <p>The high route proper begins above the last of the trees.<sup data-fn="a1b2c3d4" class="fn"><a href="#a1b2c3d4" id="a1b2c3d4-link">1</a></sup></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>For gear details, see <a href="https://example.com/gear-notes-route-flyover/" data-type="post" data-id="102">our gear notes post</a>.</p>
 <!-- /wp:paragraph -->
 ]]></content:encoded>
         <excerpt:encoded><![CDATA[<hr>
@@ -246,7 +256,9 @@ Redfish Lake.
 
     <!-- =====================================================================
          102: iframe in wp:html, self-hosted video, YouTube embed, standalone
-         image, columns WITHOUT explicit widths.
+         image, columns WITHOUT explicit widths. Also: internal link to post
+         101, and a DANGLING internal link (data-id points at a post that
+         does not exist in this export, e.g. deleted since export).
          ================================================================== -->
     <item>
         <title>Gear Notes and a Route Flyover</title>
@@ -260,7 +272,7 @@ Redfish Lake.
         <description></description>
         <content:encoded><![CDATA[
 <!-- wp:paragraph -->
-<p>A few people asked what we carried, so here it is.</p>
+<p>A few people asked what we carried, so here it is. If you haven't read <a href="https://example.com/sawtooth-traverse-part-1/" data-type="post" data-id="101">the trip report</a> yet, start there.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:html -->
@@ -314,6 +326,10 @@ https://www.youtube.com/watch?v=aqz-KE-bpKQ
 <!-- /wp:column -->
 </div>
 <!-- /wp:columns -->
+
+<!-- wp:paragraph -->
+<p>We also wrote up <a href="https://example.com/?p=9999" data-type="post" data-id="9999">an older gear teardown</a> that has since been deleted, so this link should resolve to nothing.</p>
+<!-- /wp:paragraph -->
 ]]></content:encoded>
         <excerpt:encoded><![CDATA[<p>
 What we carried, plus a flyover of the route.
@@ -580,7 +596,7 @@ Notes from two attempts at Andrew Skurka's Pfiffner Traverse.
 <!-- /wp:table -->
 
 <!-- wp:paragraph -->
-<p>Mix it the night before. It tastes better cold.</p>
+<p>Mix it the night before. It tastes better cold. If you want to know more about who's behind this site, see <a href="https://example.com/about/" data-type="page" data-id="5">our About page</a>.</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:table {"hasFixedLayout":true,"className":"is-style-stripes"} -->
