@@ -60,7 +60,7 @@ class WPMarkdownConverter(MarkdownConverter):
         attrs = f'src="{html.escape(src)}"'
         if alt:
             attrs += f' alt="{html.escape(alt)}"'
-        return f"<img {attrs}/>\n"
+        return f"<img {attrs}>\n"
 
     def convert_video(self, el: Tag, text: str, parent_tags: set) -> str:
         src = el.get("src", "")
@@ -78,7 +78,12 @@ class WPMarkdownConverter(MarkdownConverter):
         return f"<video {attrs}></video>\n"
 
     def convert_figcaption(self, el: Tag, text: str, parent_tags: set) -> str:
-        return f"<figcaption>{text.strip()}</figcaption>\n"
+        """Keep `<figcaption>` tags so they can be formatted with CSS.
+
+        Note: include double new lines so Hugo interprets the inner part as markdown,
+        not HTML.
+        """
+        return f"<figcaption>\n\n{text.strip()}\n\n</figcaption>\n"
 
     def convert_a(self, el: Tag, text: str, parent_tags: set) -> str:
         children = [
@@ -90,13 +95,21 @@ class WPMarkdownConverter(MarkdownConverter):
         # Self-linking image: <a href="..."><img/></a> with nothing else inside. These
         # are handled by `self.convert_img`, so no additional processing needed here.
         if len(children) == 1 and getattr(children[0], "name", None) == "img":
-            return text
+            return text + "\n"
 
         return super().convert_a(el, text, parent_tags)
 
     def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
-        """Keep all figure tags."""
-        return f"<figure>\n{text.strip()}\n</figure>"
+        """Keep `<figure>` tags if there are any images, videos, or figcaptions in them.
+        Otherwise fall back to default behavior (strip `<figure>` tags.)
+
+        Note: include double new lines so Hugo interprets the inner part as markdown,
+        not HTML.
+        """
+        child_types = {x.name for x in el.find_all()}
+        if any(x in child_types for x in ["img", "video", "figcaption"]):
+            return f"<figure>\n\n{text.strip()}\n\n</figure>"
+        return text + "\n"
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
         return f"{el}\n"
@@ -134,6 +147,7 @@ class WPMarkdownConverter(MarkdownConverter):
             else:
                 hyperlink = Tag(name="a", attrs={"href": el.text.strip()})
                 hyperlink.string = el.text.strip()
+                return super().convert_a(hyperlink, hyperlink.text, {})
                 # return hyperlink in HTML format rather than markdown format because
                 # these divs are usually (always?) nested inside `<figure>` tags
                 return str(hyperlink)
