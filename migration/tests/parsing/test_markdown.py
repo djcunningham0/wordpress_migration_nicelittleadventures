@@ -104,6 +104,7 @@ class TestFigures:
             '<figcaption>\n\nand a caption\n\n</figcaption>\n\n'
             "</figure>\n"
         )
+        assert out == expected
 
 
 class TestFigcaption:
