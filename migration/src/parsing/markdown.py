@@ -174,9 +174,13 @@ class WPMarkdownConverter(MarkdownConverter):
         it is a YouTube URL, convert to a Hugo shortcode. Otherwise convert to a
         hyperlink. (Note: generally, putting the exact URL in an <iframe> will not work;
         that's why we're leaving it as a hyperlink.)
+
+        ### other known edge cases ###
+        - Strava embeds
         """
         classes = set(el.get("class", []))
 
+        ### custom div classes
         matched_classes = classes.intersection(self.parse_settings.keep_div_classes)
         if matched_classes:
             class_str = " ".join(matched_classes)
@@ -193,6 +197,9 @@ class WPMarkdownConverter(MarkdownConverter):
                 hyperlink.string = el.text.strip()
                 return super().convert_a(hyperlink, hyperlink.text, {})
 
+        if "strava-embed-placeholder" in classes:
+            return f"{el}\n"
+
         return super().convert_div(el, text, parent_tags)
 
     def convert_table(self, el: Tag, text: str, parent_tags: set) -> str:
@@ -201,6 +208,14 @@ class WPMarkdownConverter(MarkdownConverter):
         """
         out = super().convert_table(el, text, parent_tags)
         return mdformat.text(out, extensions=["gfm"])
+
+    def convert_script(self, el: Tag, text: str, parent_tags: set) -> str:
+        """Only keep known edge cases."""
+        # Strava embeds
+        if el.get("src") == "https://strava-embeds.com/embed.js":
+            return f"{el}\n"
+
+        return super().convert_script(el, text, parent_tags)
 
 
 def content_to_markdown(
