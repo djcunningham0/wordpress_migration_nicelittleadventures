@@ -10,24 +10,17 @@ load_dotenv()
 # Local filesystem paths
 # -------------------------------
 
-# Wordpress export
+# Sources (Wordpress export)
 XML_PATH = os.getenv("XML_PATH")  # XML export location in local filesystem
 MEDIA_DIR = "./wp_migration_files/uploads"  # media export directory in local filesystem
 
 if XML_PATH is None:
     warnings.warn("XML_PATH is not set in `.env`")
 
-# Static site configuration
+# Targets (static site configuration)
 HUGO_TARGET_DIR = ".."
 HUGO_POSTS_SUBDIR = "posts"  # relative to `content/`
 HUGO_PAGES_SUBDIR = ""  # relative to `content/`
-
-# -------------------------------
-# Wordpress site info
-# -------------------------------
-
-SITE_URL = "https://nicelittleadventures.com"
-WP_UPLOADS_DIR = "https://nicelittleadventures.com/wp-content/uploads"
 
 # -------------------------------
 # Migration settings

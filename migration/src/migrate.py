@@ -66,9 +66,8 @@ def migrate(
 
 def copy_images_for_post(post: Post, post_dir: Path):
     images_and_videos = post.images.union(post.videos)
-
     for file in images_and_videos:
-        local_path = Path(file.replace(config.WP_UPLOADS_DIR, config.MEDIA_DIR))
+        local_path = Path(config.MEDIA_DIR) / file
         if not local_path.exists():
             logger.warning(f"missing media file: {file}; post: {post.title}")
             continue
