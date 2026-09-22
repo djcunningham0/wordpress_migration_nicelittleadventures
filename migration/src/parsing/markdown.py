@@ -42,8 +42,7 @@ FOOTNOTE_PLACEHOLDER_RE = re.compile(
 @dataclass
 class MarkdownOutput:
     markdown: str
-    images: set[str] = field(default_factory=set)
-    videos: set[str] = field(default_factory=set)
+    media_paths: set[str] = field(default_factory=set)
 
 
 class WPMarkdownConverter(MarkdownConverter):
@@ -67,8 +66,7 @@ class WPMarkdownConverter(MarkdownConverter):
 
         # uploaded images and videos to place alongside markdown files
         # (collected as a side effect of conversion)
-        self.images: set[str] = set()
-        self.videos: set[str] = set()
+        self.media_paths: set[str] = set()
 
     def convert_img(self, el: Tag, text: str, parent_tags: set) -> str:
         """Return <img> HTML tags rather than Markdown-style images for greater
@@ -88,7 +86,7 @@ class WPMarkdownConverter(MarkdownConverter):
         if image_id is not None:
             try:
                 image = self.media_by_id[image_id]
-                self.images.add(image.file_path)  # path/to/img_123.jpg
+                self.media_paths.add(image.file_path)  # path/to/img_123.jpg
                 src = image.file_name  # img_123.jpg
             except KeyError:
                 logger.info(
@@ -118,7 +116,7 @@ class WPMarkdownConverter(MarkdownConverter):
         video = next((d[x] for x in d if d[x].url.strip() == src), None)
 
         if video is not None:
-            self.videos.add(video.file_path)  # path/to/vid_123.mp4
+            self.media_paths.add(video.file_path)  # path/to/vid_123.mp4
             src = video.file_name  # vid_123.mp4
 
         attrs = []
@@ -276,9 +274,7 @@ def content_to_markdown(
     )
     markdown = prettify_markdown(markdown)
 
-    return MarkdownOutput(
-        markdown=markdown, images=converter.images, videos=converter.videos
-    )
+    return MarkdownOutput(markdown=markdown, media_paths=converter.media_paths)
 
 
 def replace_footnote_markers_with_placeholders(html: str) -> str:

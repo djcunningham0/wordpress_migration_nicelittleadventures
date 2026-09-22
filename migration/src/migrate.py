@@ -65,7 +65,7 @@ def migrate(
 
 
 def copy_images_for_post(post: Post, post_dir: Path):
-    images_and_videos = post.images.union(post.videos)
+    images_and_videos = post.media_paths
     for file in images_and_videos:
         local_path = Path(config.MEDIA_DIR) / file
         if not local_path.exists():

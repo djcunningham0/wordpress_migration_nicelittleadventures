@@ -52,8 +52,7 @@ class Post:
             parse_settings=parse_settings,
         )
         self.markdown: str = result.markdown
-        self.images: set[str] = result.images
-        self.videos: set[str] = result.videos
+        self.media_paths: set[str] = result.media_paths
 
     def __repr__(self):
         return f"Post(title={self.title}, id_={self.id_}, type={self.post_type}, author={self.author}, date={self.date})"

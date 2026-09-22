@@ -265,7 +265,7 @@ class TestImages:
         out = convert(html, media_by_id=media_by_id)
         expected = '<img src="ridge.jpg">'
         assert out.markdown == expected
-        assert out.images == {"2023/08/ridge.jpg"}
+        assert out.media_paths == {"2023/08/ridge.jpg"}
 
 
 # --------------------------------------------------------------------------
@@ -659,20 +659,17 @@ class TestDegenerateInput:
     def test_empty_content(self):
         out = convert("")
         assert out.markdown == ""
-        assert out.images == set()
-        assert out.videos == set()
+        assert out.media_paths == set()
 
     def test_whitespace_only_content(self):
         out = convert("\n\n   \n")
         assert out.markdown == ""
-        assert out.images == set()
-        assert out.videos == set()
+        assert out.media_paths == set()
 
     def test_none_content_does_not_crash(self):
         out = convert(None)
         assert out.markdown == ""
-        assert out.images == set()
-        assert out.videos == set()
+        assert out.media_paths == set()
 
 
 # --------------------------------------------------------------------------
