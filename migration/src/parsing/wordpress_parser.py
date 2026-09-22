@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import logging
+import tomli_w
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -26,17 +28,27 @@ class Post:
     title: str
     id_: str
     author: str | list[str]
-    date: str
+    _raw_date: str
     slug: str
     raw_content: str
     categories: list[str]
     tags: list[str]
     _raw_excerpt: str
     footnotes_json: list[dict[str, str]]
+    _featured_image_id: str
 
     def __post_init__(self):
         self.is_draft: bool = self.status in ["draft", "pending"]
         self.subtitle, self.excerpt = parse_custom_excerpt(self._raw_excerpt)
+        try:
+            dt = datetime.strptime(self._raw_date, "%Y-%m-%d %H:%M:%S")
+            self.date = dt.strftime("%Y-%m-%d")
+        except ValueError:
+            logger.warning(
+                "Failed to parse raw date %s as 'yyyy-mm-dd hh:mm:ss' format; leaving "
+                "as raw value",
+                self._raw_date,
+            )
 
     def generate_markdown(
         self,
@@ -51,8 +63,45 @@ class Post:
             media_by_id=media_by_id,
             parse_settings=parse_settings,
         )
-        self.markdown: str = result.markdown
-        self.media_paths: set[str] = result.media_paths
+        markdown = result.markdown
+        self.media_paths = result.media_paths
+
+        self.featured_image_name = ""
+        if self._featured_image_id:
+            try:
+                featured_image = media_by_id[self._featured_image_id]
+                self.featured_image_name = featured_image.file_name
+                self.media_paths.add(featured_image.file_path)
+            except KeyError:
+                logger.warning(
+                    "Could not find image with ID %s; featured image for post %s (id=%s)",
+                    self._featured_image_id,
+                    self.title,
+                    self.id_,
+                )
+
+        front_matter = self._make_front_matter()
+        self.markdown = front_matter + "\n" + markdown
+
+    def _make_front_matter(self) -> str:
+        if self.post_type == "post":
+            front_matter = {
+                "title": self.title,
+                "subtitle": self.subtitle,
+                "author": self.author,
+                "date": self.date,
+                "categories": self.categories,
+                "tags": self.tags,
+                "draft": self.is_draft,
+                "description": self.excerpt,
+                "featured_image": self.featured_image_name,
+            }
+        else:
+            front_matter = {
+                "title": self.title,
+                "draft": self.is_draft,
+            }
+        return "+++\n" + tomli_w.dumps(front_matter) + "+++\n"
 
     def __repr__(self):
         return f"Post(title={self.title}, id_={self.id_}, type={self.post_type}, author={self.author}, date={self.date})"
@@ -199,6 +248,11 @@ def parse_post(
     else:
         footnotes_json = []
 
+    featured_image_id = item.findtext(
+        "wp:postmeta[wp:meta_key='_thumbnail_id']/wp:meta_value",
+        namespaces=nsmap,
+    )
+
     return Post(
         post_type=post_type,
         status=status,
@@ -207,11 +261,12 @@ def parse_post(
         slug=slug,
         author=author,
         raw_content=content,
-        date=date,
+        _raw_date=date,
         categories=categories,
         tags=tags,
         _raw_excerpt=excerpt,
         footnotes_json=footnotes_json,
+        _featured_image_id=featured_image_id,
     )
 
 

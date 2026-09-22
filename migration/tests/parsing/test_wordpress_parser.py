@@ -47,6 +47,9 @@ class TestDocumentLevel:
         assert posts_by_id["103"].slug == "untitled-draft"
         assert posts_by_id["999"].slug == "untitled-draft-2"
 
+    def test_markdown_starts_with_front_matter(self, posts_by_id):
+        assert posts_by_id["101"].markdown.startswith("+++")
+
 
 # --------------------------------------------------------------------------
 # scalar fields
@@ -58,7 +61,7 @@ class TestBasicFields:
         post = posts_by_id["101"]
         assert post.title == "Sawtooth Traverse Part 1: Hiking the Sawtooth High Route"
         assert post.slug == "sawtooth-traverse-part-1"
-        assert post.date == "2023-08-14 15:30:00"
+        assert post.date == "2023-08-14"
         assert post.status == "publish"
 
     @pytest.mark.parametrize(
@@ -232,3 +235,18 @@ class TestLinks:
             'wrote up [an older gear post]({{< ref "posts/nonexistent-post" >}}) that'
             in markdown
         )
+
+
+# --------------------------------------------------------------------------
+# featured images
+# --------------------------------------------------------------------------
+
+
+class TestFeaturedImages:
+    def test_featured_image_name(self, posts_by_id):
+        p = posts_by_id["101"]
+        assert p.featured_image_name == "sawtooth-hero.jpg"
+
+    def test_featured_image_is_in_media_paths(self, posts_by_id):
+        p = posts_by_id["101"]
+        assert "2023/08/sawtooth-hero.jpg" in p.media_paths
