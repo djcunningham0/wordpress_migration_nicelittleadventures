@@ -1,19 +1,12 @@
 import re
 
 
-def strip_wp_size_suffix(url: str) -> str:
-    """Remove a trailing WordPress resize suffix of the following formats before the
-    file extension:
-    - "-{width}x{height}" (e.g., "1024x768")
-    - "-scaled"
-
-    Example:
-    >>> url = "https://example.com/wp-content/uploads/image-1024x768.jpg"
-    >>> strip_wp_size_suffix(url)
-    'https://example.com/wp-content/uploads/image.jpg'
-
-    >>> url = "https://example.com/image-scaled.png"
-    >>> strip_wp_size_suffix(url)
-    'https://example.com/image.jpg'
+def get_wp_image_id(classes: list[str]) -> str | None:
+    """Get the ID from a class name like "wp-image-####". Returns the "####" ID of the
+    first match in the list. If no match, returns None.
     """
-    return re.sub(r"-(?:\d+x\d+|scaled)(?=\.\w+(?:\?.*)?$)", "", url)
+    pattern = re.compile(r"wp-image-(\d+)")
+    for item in classes:
+        match = pattern.search(item)
+        if match:
+            return match.group(1)

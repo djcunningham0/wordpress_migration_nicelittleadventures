@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,13 +12,15 @@ import mdformat
 from bs4 import NavigableString, Tag
 from markdownify import MarkdownConverter
 
-from src.parsing.images import strip_wp_size_suffix
+from src.parsing.images import get_wp_image_id
 from src.parsing.settings import ParseSettings
 from src.parsing.youtube import create_youtube_shortcode
 
 if TYPE_CHECKING:
     from src.parsing.wordpress_parser import MediaObject
 
+
+logger = logging.getLogger(__name__)
 
 MARKDOWNIFY_ARGS = {
     "heading_style": "ATX",
@@ -62,32 +65,61 @@ class WPMarkdownConverter(MarkdownConverter):
         self.media_by_id = media_by_id
         self.parse_settings = parse_settings or ParseSettings()
 
-        # collected as a side effect of conversion
+        # uploaded images and videos to place alongside markdown files
+        # (collected as a side effect of conversion)
         self.images: set[str] = set()
         self.videos: set[str] = set()
 
     def convert_img(self, el: Tag, text: str, parent_tags: set) -> str:
-        src: str = el.get("src", "")
-        alt: str = el.get("alt", "")
+        """Return <img> HTML tags rather than Markdown-style images for greater
+        formatting flexibility. Keep alt text and remove other attributes.
 
-        # self linking images will have an <a> parent tag linking to the full resolution image
-        if el.parent is not None and el.parent.name == "a":
-            href: str = el.parent.get("href", "")
-            if strip_wp_size_suffix(href) == strip_wp_size_suffix(src):
-                src = href
+        For uploaded images (which should be most or all of them), point to the file
+        name and store the relative file path so we can copy the image to the right
+        location later.
 
-        if src:
-            self.images.add(src)
+        For images at other URLs, use the src URL.
+        """
+        # uploaded image have class "wp-image-####"
+        classes = el.get("class", [])
+        image_id = get_wp_image_id(classes)
+
+        src = None
+        if image_id is not None:
+            try:
+                image = self.media_by_id[image_id]
+                self.images.add(image.file_path)  # path/to/img_123.jpg
+                src = image.file_name  # img_123.jpg
+            except KeyError:
+                logger.info(
+                    "could not find image with ID %s; from link %s", image_id, str(el)
+                )
+
+        # otherwise use the src from the image
+        if src is None:
+            src = str(el.get("src", ""))
 
         attrs = f'src="{html.escape(src)}"'
+        alt = str(el.get("alt", ""))
         if alt:
             attrs += f' alt="{html.escape(alt)}"'
         return f"<img {attrs}>\n"
 
     def convert_video(self, el: Tag, text: str, parent_tags: set) -> str:
-        src: str = el.get("src", "")
-        if src:
-            self.videos.add(src)
+        """Similar handling to images: point to the file name for uploaded videos, and
+        point to the src URL for other videos.
+
+        But there's no class in the <video> tag identifying the source ID like there is
+        for <img> tags, so we look it up by URL instead of ID
+        """
+        src: str = str(el.get("src", "")).strip()
+
+        d = self.media_by_id
+        video = next((d[x] for x in d if d[x].url.strip() == src), None)
+
+        if video is not None:
+            self.videos.add(video.file_path)  # path/to/vid_123.mp4
+            src = video.file_name  # vid_123.mp4
 
         attrs = []
         if el.get("controls") is not None:

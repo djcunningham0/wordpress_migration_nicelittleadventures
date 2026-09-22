@@ -154,29 +154,39 @@ class TestFootnotes:
 
 class TestImages:
     def test_parses_images_to_set(self, posts_by_id):
-        images = posts_by_id["101"].images
+        p = posts_by_id["101"]
+        images = p.images
         expected = {
-            "https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg",
-            "https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg",
+            "2023/08/sawtooth-ridge.jpg",
+            "2023/08/alpine-lake.jpg",
         }
         assert images == expected
 
+    def test_images_linked_to_file(self, posts_by_id):
+        p = posts_by_id["101"]
+        markdown = p.markdown
+        print(markdown)
+        assert '<img src="sawtooth-ridge.jpg">' in markdown
+        assert '<img src="sawtooth-ridge.jpg" alt="Ridgeline at dawn">' in markdown
+        assert '<img src="alpine-lake.jpg" alt="Alpine lake">' in markdown
+
     def test_parses_videos_to_set(self, posts_by_id):
         videos = posts_by_id["102"].videos
-        assert videos == {
-            "https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4"
-        }
+        assert videos == {"2023/09/ridge-flyover.mp4"}
+
+    def test_videos_linked_to_file(self, posts_by_id):
+        markdown = posts_by_id["102"].markdown
+        print(markdown)
+        assert '<video controls src="ridge-flyover.mp4"></video>' in markdown
 
     def test_parses_images_and_videos(self, posts_by_id):
         out = posts_by_id["102"]
         assert out.images == {
-            "https://example.com/wp-content/uploads/2023/09/pack-layout.jpg",
-            "https://example.com/wp-content/uploads/2023/08/sawtooth-ridge.jpg",
-            "https://example.com/wp-content/uploads/2023/08/alpine-lake.jpg",
+            "2023/09/pack-layout.jpg",
+            "2023/08/sawtooth-ridge.jpg",
+            "2023/08/alpine-lake.jpg",
         }
-        assert out.videos == {
-            "https://example.com/wp-content/uploads/2023/09/ridge-flyover.mp4"
-        }
+        assert out.videos == {"2023/09/ridge-flyover.mp4"}
 
 
 # --------------------------------------------------------------------------

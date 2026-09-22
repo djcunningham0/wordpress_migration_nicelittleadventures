@@ -9,6 +9,7 @@ from src.parsing.markdown import (
     resolve_footnotes,
 )
 from src.parsing.settings import ParseSettings
+from src.parsing.wordpress_parser import MediaObject
 
 
 def get_empty_settings() -> ParseSettings:
@@ -238,20 +239,33 @@ class TestImages:
         self_linking_image = (
             '<figure class="wp-block-image size-large">'
             '<a href="https://example.com/wp-content/uploads/2023/08/ridge.jpg">'
-            '<img src="https://example.com/wp-content/uploads/2023/08/ridge-1024x768.jpg" '
+            '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg" '
             "</figure>"
         )
-        out = convert(self_linking_image)
+        out = convert(self_linking_image).markdown
         expected = (
             "<figure>\n\n"
             '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg">\n\n'
             "</figure>"
         )
-        assert out.markdown == expected
+        assert out == expected
 
     def test_image_with_escaped_characters_in_alt_text(self):
         html = '<img src="https://example.com/a.jpg" alt="a quote &quot;Overlook&quot; and ampersand &amp;">'
         assert convert(html).markdown.strip() == html.strip()
+
+    def test_uploaded_image_links_to_file_name(self):
+        image = MediaObject(
+            id_="123",
+            url="https://example.com/wp-content/uploads/2023/08/ridge.jpg",
+            file_path="2023/08/ridge.jpg",
+        )
+        media_by_id = {"123": image}
+        html = '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg" class="wp-image-123">'
+        out = convert(html, media_by_id=media_by_id)
+        expected = '<img src="ridge.jpg">'
+        assert out.markdown == expected
+        assert out.images == {"2023/08/ridge.jpg"}
 
 
 # --------------------------------------------------------------------------

@@ -27,7 +27,7 @@ HUGO_PAGES_SUBDIR = ""  # relative to `content/`
 # -------------------------------
 
 SITE_URL = "https://nicelittleadventures.com"
-WP_MEDIA_DIR = "https://nicelittleadventures.com/wp-content/uploads"
+WP_UPLOADS_DIR = "https://nicelittleadventures.com/wp-content/uploads"
 
 # -------------------------------
 # Migration settings

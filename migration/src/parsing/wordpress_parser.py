@@ -61,7 +61,19 @@ class Post:
 
 @dataclass
 class MediaObject:
-    """Images and videos."""
+    """Images and videos.
+
+    Parameters
+    ----------
+    id_
+        Wordpress ID of the image
+    url
+        Full URL of the uploaded image (https://{HOSTNAME}.com/wp-content/uploads/path/to/image.jpg)
+    file_path
+        Relative file path of the uploaded image (path/to/image.jpg)
+    file_name
+        (calculated from `file_path`) Image file name (image.jpg)
+    """
 
     id_: str
     url: str
