@@ -51,10 +51,10 @@ def migrate(
         post_file_path = post_dir / "index.md"
         if post_file_path.exists():
             if overwrite_individual:
-                shutil.rmtree(post_file_path)
+                shutil.rmtree(post_dir)
             else:
                 logger.info(f"Skipping existing file: {post_file_path}")
-            continue
+                continue
 
         with open(post_file_path, "w", encoding="utf-8") as f:
             f.write(post.markdown)
