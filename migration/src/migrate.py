@@ -47,15 +47,16 @@ def migrate(
         else:
             raise ValueError(f"Unknown post type: {post.post_type}")
 
-        os.makedirs(post_dir, exist_ok=True)
-        post_file_path = post_dir / "index.md"
-        if post_file_path.exists():
+        if post_dir.exists():
             if overwrite_individual:
                 shutil.rmtree(post_dir)
             else:
-                logger.info(f"Skipping existing file: {post_file_path}")
+                logger.info(f"Skipping existing post: {post_dir}")
                 continue
 
+        os.makedirs(post_dir, exist_ok=True)
+
+        post_file_path = post_dir / "index.md"
         with open(post_file_path, "w", encoding="utf-8") as f:
             f.write(post.markdown)
         logger.info(f"Wrote {post_file_path}")
