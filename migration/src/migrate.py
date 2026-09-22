@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def migrate(
-    xml_name: str = None,
-    target_dir_name: str = None,
+    xml_name: str | None = None,
+    target_dir_name: str | None = None,
     overwrite_individual: bool = True,
     full_rebuild: bool = False,
 ):
@@ -72,7 +72,10 @@ def copy_images_for_post(post: Post, post_dir: Path):
         shutil.copy(local_path, post_dir)
 
 
-def parse_paths(xml_name: str = None, target_dir_name: str = None) -> tuple[Path, Path]:
+def parse_paths(
+    xml_name: str | None = None,
+    target_dir_name: str | None = None,
+) -> tuple[Path, Path]:
     if xml_name is None:
         xml_name = config.XML_PATH
     if target_dir_name is None:

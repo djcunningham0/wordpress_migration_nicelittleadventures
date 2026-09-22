@@ -487,8 +487,10 @@ class TestQuotes:
 
 
 class TestAuthorDivs:
-    custom_div_classes = {"fixture-author-1", "fixture-author-2"}
-    parse_settings = ParseSettings(keep_div_classes=custom_div_classes)
+    @property
+    def parse_settings(self):
+        custom_div_classes = {"fixture-author-1", "fixture-author-2"}
+        return ParseSettings(keep_div_classes=custom_div_classes)
 
     def test_exact_author_div_output(self):
         html = (
