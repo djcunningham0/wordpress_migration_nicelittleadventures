@@ -13,7 +13,7 @@ import pytest
 
 
 def convert(html: str) -> MarkdownOutput:
-    return content_to_markdown(html, [])
+    return content_to_markdown(html, [], {}, {})
 
 
 # --------------------------------------------------------------------------
@@ -493,7 +493,7 @@ class TestFootnotes:
             {"id": "aaaa1111", "content": "Listed first in JSON."},
             {"id": "bbbb2222", "content": "Listed second in JSON."},
         ]
-        out = resolve_footnotes(markdown, footnotes)
+        out = resolve_footnotes(markdown, footnotes, {})
         assert "First[^1] then second[^2]." in out
         assert "[^1]: Listed second in JSON." in out
         assert "[^2]: Listed first in JSON." in out
@@ -506,7 +506,7 @@ class TestFootnotes:
             {"id": "aaaa1111", "content": "One."},
             {"id": "bbbb2222", "content": "Two."},
         ]
-        out = resolve_footnotes(markdown, footnotes)
+        out = resolve_footnotes(markdown, footnotes, {})
         assert "A[^1] B[^2] C[^1]" in out
         assert out.count("[^1]: One.") == 1
 
@@ -517,16 +517,16 @@ class TestFootnotes:
             {"id": "aaaa1111", "content": "Referenced."},
             {"id": "bbbb2222", "content": "Never referenced."},
         ]
-        out = resolve_footnotes(markdown, footnotes)
+        out = resolve_footnotes(markdown, footnotes, {})
         assert "Never referenced." not in out
 
     def test_no_footnotes_leaves_markdown_untouched(self):
         markdown = "Just some text."
-        assert resolve_footnotes(markdown, []) == markdown
+        assert resolve_footnotes(markdown, [], {}) == markdown
 
     def test_markers_with_empty_footnote_list_still_numbered(self):
         """Markers present but JSON empty: body is renumbered, definitions are blank."""
-        out = resolve_footnotes("Text@@FOOTNOTE:aaaa1111@@", [])
+        out = resolve_footnotes("Text@@FOOTNOTE:aaaa1111@@", [], {})
         assert "Text[^1]" in out
 
     ### rendering
@@ -539,7 +539,7 @@ class TestFootnotes:
                 "content": 'Roughly <em>76 miles</em>, see <a href="https://example.com/x">here</a>.',
             }
         ]
-        out = resolve_footnotes(markdown, footnotes)
+        out = resolve_footnotes(markdown, footnotes, {})
         assert "[^1]: Roughly *76 miles*, see [here](https://example.com/x)." in out
 
     ### end to end
@@ -547,7 +547,7 @@ class TestFootnotes:
     def test_end_to_end_footnote_conversion(self):
         html = f"<p>The high route begins above treeline.{sup('a1b2c3d4')}</p>"
         footnotes = [{"id": "a1b2c3d4", "content": "Unmaintained above 9,000 ft."}]
-        out = content_to_markdown(html, footnotes).markdown
+        out = content_to_markdown(html, footnotes, {}, {}).markdown
         assert "The high route begins above treeline.[^1]" in out
         assert "[^1]: Unmaintained above 9,000 ft." in out
 

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import html
 import re
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import mdformat
 from bs4 import NavigableString, Tag
@@ -9,6 +12,9 @@ from markdownify import MarkdownConverter
 from src.config import KEEP_CUSTOM_DIV_CLASSES
 from src.parsing.images import strip_wp_size_suffix
 from src.parsing.youtube import create_youtube_shortcode
+
+if TYPE_CHECKING:
+    from src.parsing.wordpress_parser import MediaObject
 
 
 MARKDOWNIFY_ARGS = {
@@ -39,9 +45,21 @@ class WPMarkdownConverter(MarkdownConverter):
     """Converts WordPress block HTML to Markdown, keeping images, videos, and embeds as
     raw HTML for flexibility in Hugo."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        post_id_to_slug: dict[str, str],
+        media_by_id: dict[str, MediaObject],
+        **kwargs,
+    ):
+        kwargs = {**MARKDOWNIFY_ARGS, **kwargs}  # use kwargs, fall back to default
         super().__init__(*args, **kwargs)
-        self.images: set[str] = set()  # collected as a side effect of conversion
+
+        self.post_id_to_slug = post_id_to_slug
+        self.media_by_id = media_by_id
+
+        # collected as a side effect of conversion
+        self.images: set[str] = set()
         self.videos: set[str] = set()
 
     def convert_img(self, el: Tag, text: str, parent_tags: set) -> str:
@@ -166,13 +184,11 @@ class WPMarkdownConverter(MarkdownConverter):
         return mdformat.text(out, extensions=["gfm"])
 
 
-def get_default_markdown_converter() -> WPMarkdownConverter:
-    return WPMarkdownConverter(**MARKDOWNIFY_ARGS)
-
-
 def content_to_markdown(
     html_content: str,
     footnotes_json: list[dict[str, str]],
+    post_id_to_slug: dict[str, str],
+    media_by_id: dict[str, MediaObject],
 ) -> MarkdownOutput:
     """Convert HTML content to Markdown."""
 
@@ -180,9 +196,16 @@ def content_to_markdown(
         return MarkdownOutput(markdown="")
 
     html_content = replace_footnote_markers_with_placeholders(html_content)
-    converter = get_default_markdown_converter()
+    converter = WPMarkdownConverter(
+        post_id_to_slug=post_id_to_slug,
+        media_by_id=media_by_id,
+    )
     markdown = converter.convert(html_content).strip()
-    markdown = resolve_footnotes(markdown, footnotes_json)
+    markdown = resolve_footnotes(
+        markdown=markdown,
+        footnotes=footnotes_json,
+        post_id_to_slug=post_id_to_slug,
+    )
     markdown = prettify_markdown(markdown)
 
     return MarkdownOutput(
@@ -197,7 +220,11 @@ def replace_footnote_markers_with_placeholders(html: str) -> str:
     return FOOTNOTE_PLACEHOLDER_RE.sub(r"@@FOOTNOTE:\1@@", html)
 
 
-def resolve_footnotes(markdown: str, footnotes: list[dict]) -> str:
+def resolve_footnotes(
+    markdown: str,
+    footnotes: list[dict],
+    post_id_to_slug: dict[str, str],
+) -> str:
     """Resolve footnote placeholders in the markdown content with actual footnote
     definitions."""
 
@@ -220,7 +247,10 @@ def resolve_footnotes(markdown: str, footnotes: list[dict]) -> str:
     definitions = []
     for n, fn_id in enumerate(order, start=1):
         content_html = footnotes_by_id.get(fn_id, "")
-        converter = get_default_markdown_converter()
+        converter = WPMarkdownConverter(
+            post_id_to_slug=post_id_to_slug,
+            media_by_id={},  # footnotes never contain images
+        )
         content_md = converter.convert(content_html)
         definitions.append(f"[^{n}]: {content_md}")
 

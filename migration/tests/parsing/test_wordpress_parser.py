@@ -25,13 +25,13 @@ class TestDocumentLevel:
         assert posts_by_id["5"].post_type == "page"
 
     def test_skip_ids_excludes_posts(self, xml_path):
-        posts = parse_wordpress_xml(xml_path, skip_ids=["101", "5"])
+        posts = parse_wordpress_xml(xml_path, skip_ids=["101", "5"]).posts
         assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106", "999"}
 
     def test_skip_ids_default_is_not_shared_between_calls(self, xml_path):
         """Guards against a mutable-default regression if `skip_ids=[]` ever creeps in."""
-        first = parse_wordpress_xml(xml_path)
-        second = parse_wordpress_xml(xml_path)
+        first = parse_wordpress_xml(xml_path).posts
+        second = parse_wordpress_xml(xml_path).posts
         assert {p.id_ for p in first} == {p.id_ for p in second}
 
     def test_draft_post_gets_slug_from_title(self, posts_by_id):
@@ -112,7 +112,7 @@ class TestAuthors:
             "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
             {"Danny": "Danny C", "danny": "Danny C"},
         )
-        posts = {p.id_: p for p in parse_wordpress_xml(xml_path)}
+        posts = parse_wordpress_xml(xml_path).posts_by_id
         assert posts["102"].author == "Danny C"
         assert posts["101"].author == ["Danny C", "Siyang"]
         assert posts["103"].author == "Danny C"  # override also normalizes the fallback
@@ -122,7 +122,7 @@ class TestAuthors:
             "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
             {"Nobody": "Someone"},
         )
-        posts = {p.id_: p for p in parse_wordpress_xml(xml_path)}
+        posts = parse_wordpress_xml(xml_path).posts_by_id
         assert posts["102"].author == "Danny"
 
 
@@ -133,7 +133,7 @@ class TestAuthors:
 
 class TestFootnotes:
     def test_footnotes_postmeta_is_parsed_as_json(self, posts_by_id):
-        footnotes = posts_by_id["105"]._footnotes_json
+        footnotes = posts_by_id["105"].footnotes_json
         assert [fn["id"] for fn in footnotes] == ["deadbeef", "c0ffee01"]
         assert footnotes == [
             {"content": "Footnote two.", "id": "deadbeef"},
@@ -144,11 +144,11 @@ class TestFootnotes:
         ]
 
     def test_footnotes_absent_yields_empty_list(self, posts_by_id):
-        assert posts_by_id["103"]._footnotes_json == []
+        assert posts_by_id["103"].footnotes_json == []
 
     def test_thumbnail_postmeta_does_not_confuse_footnote_lookup(self, posts_by_id):
         """104 has _thumbnail_id but no footnotes; the XPath must not match the wrong meta."""
-        assert posts_by_id["104"]._footnotes_json == []
+        assert posts_by_id["104"].footnotes_json == []
 
 
 # --------------------------------------------------------------------------

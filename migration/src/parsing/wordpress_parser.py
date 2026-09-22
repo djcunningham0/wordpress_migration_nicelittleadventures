@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import json
 import logging
-import re
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -25,20 +26,29 @@ class Post:
     status: Literal["publish", "draft", "pending", "trash"]
     title: str
     id_: str
-    slug: str
     author: str | list[str]
-    _content: str
     date: str
+    slug: str
+    raw_content: str
     categories: list[str]
     tags: list[str]
-    _excerpt: str
-    _footnotes_json: list[dict[str, str]]
+    _raw_excerpt: str
+    footnotes_json: list[dict[str, str]]
 
     def __post_init__(self):
         self.is_draft: bool = self.status in ["draft", "pending"]
-        self.subtitle, self.excerpt = parse_custom_excerpt(self._excerpt)
+        self.subtitle, self.excerpt = parse_custom_excerpt(self._raw_excerpt)
+
+    def generate_markdown(
+        self,
+        post_id_to_slug: dict[str, str],
+        media_by_id: dict[str, MediaObject],
+    ):
         result = content_to_markdown(
-            html_content=self._content, footnotes_json=self._footnotes_json
+            html_content=self.raw_content,
+            footnotes_json=self.footnotes_json,
+            post_id_to_slug=post_id_to_slug,
+            media_by_id=media_by_id,
         )
         self.markdown: str = result.markdown
         self.images: set[str] = result.images
@@ -48,7 +58,63 @@ class Post:
         return f"Post(title={self.title}, id_={self.id_}, type={self.post_type}, author={self.author}, date={self.date})"
 
 
-def parse_wordpress_xml(xml_path: Path, skip_ids: list[str | int] = None) -> list[Post]:
+@dataclass
+class MediaObject:
+    """Images and videos."""
+    id_: str
+    url: str
+    file_path: str
+
+    def __post_init__(self):
+        self.file_name: str = self.file_path.strip("/").split("/")[-1]
+
+
+@dataclass
+class SiteContents:
+    posts: list[Post]
+    media: list[MediaObject]
+
+    def __post_init__(self):
+        self._validate()
+        self.process_posts()
+
+    def _validate(self):
+        post_ids = {x.id_ for x in self.posts}
+        post_slugs = {x.slug for x in self.posts}
+        media_ids = {x.id_ for x in self.media}
+        if len(post_ids) != len(self.posts):
+            raise ValueError("Found duplicate post IDs")
+        if len(post_slugs) != len(self.posts):
+            raise ValueError("Found duplicate post slugs")
+        if len(media_ids) != len(self.media):
+            raise ValueError("Found duplicate media IDs")
+        if len(post_ids.union(media_ids)) != len(self.posts) + len(self.media):
+            raise ValueError("Found duplicate IDs across posts and media")
+
+    @property
+    def posts_by_id(self) -> dict[str, Post]:
+        return {x.id_: x for x in self.posts}
+
+    @property
+    def media_by_id(self) -> dict[str, MediaObject]:
+        return {x.id_: x for x in self.media}
+
+    @property
+    def post_id_to_slug(self) -> dict[str, str]:
+        return {x.id_: x.slug for x in self.posts}
+
+    def process_posts(self):
+        for post in self.posts:
+            post.generate_markdown(
+                post_id_to_slug=self.post_id_to_slug,
+                media_by_id=self.media_by_id,
+            )
+
+
+def parse_wordpress_xml(
+    xml_path: Path,
+    skip_ids: list[str | int] = None,
+) -> SiteContents:
     skip_ids = skip_ids or []
     skip_ids = [str(x) for x in skip_ids]
     tree = etree.parse(str(xml_path))
@@ -58,16 +124,20 @@ def parse_wordpress_xml(xml_path: Path, skip_ids: list[str | int] = None) -> lis
     logger.debug(f"Namespace map: {nsmap}")
 
     posts = []
+    media = []
     for item in root.findall(".//channel/item"):
         if (id_ := item.findtext("wp:post_id", namespaces=nsmap)) in skip_ids:
             logger.debug(f"Skipping post with ID {id_}")
             continue
+
         post_type = item.findtext("wp:post_type", namespaces=nsmap)
         if post_type in ("post", "page"):
             posts.append(parse_post(item, nsmap))
+        elif post_type == "attachment":
+            media.append(parse_media_object(item, nsmap))
 
-    logger.info(f"parsed {len(posts):,} posts and pages from XML file {xml_path}")
-    return posts
+    logger.info(f"parsed {len(posts):,} posts/pages and {len(media):,} media files")
+    return SiteContents(posts=posts, media=media)
 
 
 def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
@@ -110,13 +180,23 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
         id_=id_,
         slug=slug,
         author=author,
-        _content=content,
+        raw_content=content,
         date=date,
         categories=categories,
         tags=tags,
-        _excerpt=excerpt,
-        _footnotes_json=footnotes_json,
+        _raw_excerpt=excerpt,
+        footnotes_json=footnotes_json,
     )
+
+
+def parse_media_object(item: etree._Element, nsmap: dict[str, str]) -> MediaObject:
+    id_ = item.findtext("wp:post_id", namespaces=nsmap)
+    url = item.findtext("wp:attachment_url", namespaces=nsmap)
+    file_path = item.findtext(
+        "wp:postmeta[wp:meta_key='_wp_attached_file']/wp:meta_value",
+        namespaces=nsmap,
+    )
+    return MediaObject(id_=id_, url=url, file_path=file_path)
 
 
 def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:

@@ -4,7 +4,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 from lxml import etree
 
-from src.parsing.wordpress_parser import Post, parse_wordpress_xml
+from src.parsing.wordpress_parser import Post, SiteContents, parse_wordpress_xml
 
 DATA_DIR = Path(__file__).parent / "sample_data"
 SAMPLE_XML = DATA_DIR / "sample_wxr_export.xml"
@@ -60,8 +60,13 @@ def items(tree) -> dict[str, etree._Element]:
 
 
 @pytest.fixture(scope="session")
-def posts(xml_path) -> list[Post]:
+def site_contents(xml_path) -> SiteContents:
     return parse_wordpress_xml(xml_path)
+
+
+@pytest.fixture(scope="session")
+def posts(site_contents) -> list[Post]:
+    return site_contents.posts
 
 
 @pytest.fixture(scope="session")
