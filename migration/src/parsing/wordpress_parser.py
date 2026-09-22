@@ -14,7 +14,6 @@ from src.parsing.markdown import content_to_markdown
 from src.parsing.settings import ParseSettings
 from src.parsing.slugs import create_unique_slug
 
-
 logger = logging.getLogger(__name__)
 
 USED_SLUGS: set[str] = set()

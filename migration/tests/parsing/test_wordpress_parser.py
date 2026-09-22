@@ -9,7 +9,6 @@ import pytest
 from src.parsing.settings import ParseSettings
 from src.parsing.wordpress_parser import parse_wordpress_xml
 
-
 # --------------------------------------------------------------------------
 # document-level
 # --------------------------------------------------------------------------

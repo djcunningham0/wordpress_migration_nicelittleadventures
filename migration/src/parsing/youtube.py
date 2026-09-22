@@ -1,4 +1,4 @@
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 
 def create_youtube_shortcode(youtube_url: str):
@@ -14,8 +14,7 @@ def extract_youtube_id(url: str) -> str | None:
     hostname = parsed.hostname.lower() if parsed.hostname else ""
 
     # Strip leading "www." for easier matching
-    if hostname.startswith("www."):
-        hostname = hostname[4:]
+    hostname = hostname.removeprefix("www.")
 
     # youtu.be/VIDEO_ID
     if hostname == "youtu.be":

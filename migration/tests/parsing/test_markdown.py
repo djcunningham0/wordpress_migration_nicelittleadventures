@@ -10,8 +10,6 @@ from src.parsing.markdown import (
 )
 from src.parsing.settings import ParseSettings
 
-import pytest
-
 
 def get_empty_settings() -> ParseSettings:
     return ParseSettings(
