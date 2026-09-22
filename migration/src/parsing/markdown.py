@@ -192,9 +192,6 @@ class WPMarkdownConverter(MarkdownConverter):
                 hyperlink = Tag(name="a", attrs={"href": el.text.strip()})
                 hyperlink.string = el.text.strip()
                 return super().convert_a(hyperlink, hyperlink.text, {})
-                # return hyperlink in HTML format rather than markdown format because
-                # these divs are usually (always?) nested inside `<figure>` tags
-                return str(hyperlink)
 
         return super().convert_div(el, text, parent_tags)
 
