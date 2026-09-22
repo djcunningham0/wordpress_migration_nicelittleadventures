@@ -114,7 +114,10 @@ if __name__ == "__main__":
         help="Overwrite existing files",
     )
     parser.add_argument(
-        "--full-rebuild", action="store_true", default=False, help="Perform full rebuild",
+        "--full-rebuild",
+        action="store_true",
+        default=False,
+        help="Perform full rebuild",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 

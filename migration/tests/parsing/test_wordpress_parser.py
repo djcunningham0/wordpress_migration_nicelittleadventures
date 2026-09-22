@@ -215,16 +215,25 @@ class TestCustomDivs:
 # internal links
 # --------------------------------------------------------------------------
 
+
 class TestLinks:
     def test_post_to_post_internal_link(self, posts_by_id):
         markdown = posts_by_id["101"].markdown
-        assert 'For gear details, see [our gear notes post]({{< ref "posts/gear-notes-route-flyover" >}}).' in markdown
+        assert (
+            'For gear details, see [our gear notes post]({{< ref "posts/gear-notes-route-flyover" >}}).'
+            in markdown
+        )
 
     def test_post_to_page_internal_link(self, posts_by_id):
         markdown = posts_by_id["106"].markdown
         print(markdown)
-        assert 'behind this site, see [our About page]({{< ref "about" >}}).' in markdown
+        assert (
+            'behind this site, see [our About page]({{< ref "about" >}}).' in markdown
+        )
 
     def test_missing_post_id_falls_back_to_source_slug(self, posts_by_id):
         markdown = posts_by_id["102"].markdown
-        assert 'wrote up [an older gear post]({{< ref "posts/nonexistent-post" >}}) that' in markdown
+        assert (
+            'wrote up [an older gear post]({{< ref "posts/nonexistent-post" >}}) that'
+            in markdown
+        )

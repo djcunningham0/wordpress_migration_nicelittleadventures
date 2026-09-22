@@ -63,6 +63,7 @@ class Post:
 @dataclass
 class MediaObject:
     """Images and videos."""
+
     id_: str
     url: str
     file_path: str
@@ -215,9 +216,7 @@ def parse_media_object(item: etree._Element, nsmap: dict[str, str]) -> MediaObje
 
 
 def _parse_authors(
-    item: etree._Element,
-    nsmap: dict[str, str],
-    overrides: dict[str, str] | None = None
+    item: etree._Element, nsmap: dict[str, str], overrides: dict[str, str] | None = None
 ) -> str | list[str]:
     """Parse the author(s) from a WordPress XML item."""
     overrides = overrides or {}

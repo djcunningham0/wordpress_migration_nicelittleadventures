@@ -22,6 +22,7 @@ def get_empty_settings() -> ParseSettings:
         pages_subdir="",
     )
 
+
 def convert(
     html: str,
     parse_settings: ParseSettings | None = None,
@@ -416,13 +417,13 @@ class TestTables:
 
     def test_table_pipes_are_aligned(self):
         html = (
-            '<figure>'
-            '<table>'
+            "<figure>"
+            "<table>"
             "<thead><tr><th>col 1</th><th>col 2</th></tr></thead>"
             "<tbody><tr><td>x</td><td>y</td></tr>"
             "<tr><td>z</td><td>longer value</td></tr></tbody>"
-            '</table>'
-            '</figure>'
+            "</table>"
+            "</figure>"
         )
         expected = (
             "| col 1 | col 2        |\n"
@@ -435,14 +436,14 @@ class TestTables:
 
     def test_table_pipes_are_aligned_and_keeps_caption(self):
         html = (
-            '<figure>'
-            '<table>'
+            "<figure>"
+            "<table>"
             "<thead><tr><th>col 1</th><th>col 2</th></tr></thead>"
             "<tbody><tr><td>x</td><td>y</td></tr>"
             "<tr><td>z</td><td>longer value</td></tr></tbody>"
-            '</table>'
-            '<figcaption>a caption</figcaption>'
-            '</figure>'
+            "</table>"
+            "<figcaption>a caption</figcaption>"
+            "</figure>"
         )
         expected = (
             "<figure>\n\n"
@@ -488,7 +489,6 @@ class TestQuotes:
 
 
 class TestAuthorDivs:
-
     custom_div_classes = {"fixture-author-1", "fixture-author-2"}
     parse_settings = ParseSettings(keep_div_classes=custom_div_classes)
 

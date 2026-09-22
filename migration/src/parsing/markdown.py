@@ -282,5 +282,5 @@ def resolve_footnotes(
 
 
 def prettify_markdown(text: str) -> str:
-    out = re.sub(r'\n{3,}', '\n\n', text)  # collapse 3+ newlines to 2
+    out = re.sub(r"\n{3,}", "\n\n", text)  # collapse 3+ newlines to 2
     return out
