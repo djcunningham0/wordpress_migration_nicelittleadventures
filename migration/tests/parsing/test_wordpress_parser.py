@@ -6,6 +6,7 @@ post_type filtering and postmeta lookups only mean anything in context.
 
 import pytest
 
+from src.parsing.settings import ParseSettings
 from src.parsing.wordpress_parser import parse_wordpress_xml
 
 
@@ -25,7 +26,8 @@ class TestDocumentLevel:
         assert posts_by_id["5"].post_type == "page"
 
     def test_skip_ids_excludes_posts(self, xml_path):
-        posts = parse_wordpress_xml(xml_path, skip_ids=["101", "5"]).posts
+        settings = ParseSettings(skip_ids={"101", "5"})
+        posts = parse_wordpress_xml(xml_path, parse_settings=settings).posts
         assert {p.id_ for p in posts} == {"102", "103", "104", "105", "106", "999"}
 
     def test_skip_ids_default_is_not_shared_between_calls(self, xml_path):
@@ -107,22 +109,17 @@ class TestAuthors:
         """103 has no author category, so we fall back — and get the *login*, lowercase."""
         assert posts_by_id["103"].author == "danny"
 
-    def test_author_overrides_applied(self, xml_path, monkeypatch):
-        monkeypatch.setattr(
-            "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
-            {"Danny": "Danny C", "danny": "Danny C"},
-        )
-        posts = parse_wordpress_xml(xml_path).posts_by_id
+    def test_author_overrides_applied(self, xml_path):
+        overrides = {"Danny": "Danny C", "danny": "Danny C"}
+        settings = ParseSettings(author_overrides=overrides)
+        posts = parse_wordpress_xml(xml_path, parse_settings=settings).posts_by_id
         assert posts["102"].author == "Danny C"
         assert posts["101"].author == ["Danny C", "Siyang"]
         assert posts["103"].author == "Danny C"  # override also normalizes the fallback
 
-    def test_author_override_of_unknown_name_is_noop(self, xml_path, monkeypatch):
-        monkeypatch.setattr(
-            "src.parsing.wordpress_parser.AUTHOR_OVERRIDES",
-            {"Nobody": "Someone"},
-        )
-        posts = parse_wordpress_xml(xml_path).posts_by_id
+    def test_author_override_of_unknown_name_is_noop(self, xml_path):
+        settings = ParseSettings(author_overrides={"Nobody": "Someone"})
+        posts = parse_wordpress_xml(xml_path, parse_settings=settings).posts_by_id
         assert posts["102"].author == "Danny"
 
 
@@ -212,3 +209,22 @@ class TestCustomDivs:
         markdown = posts_by_id["101"].markdown
         assert '<div class="fixture-author-1"' in markdown
         assert '<div class="fixture-author-2"' in markdown
+
+
+# --------------------------------------------------------------------------
+# internal links
+# --------------------------------------------------------------------------
+
+class TestLinks:
+    def test_post_to_post_internal_link(self, posts_by_id):
+        markdown = posts_by_id["101"].markdown
+        assert 'For gear details, see [our gear notes post]({{< ref "posts/gear-notes-route-flyover" >}}).' in markdown
+
+    def test_post_to_page_internal_link(self, posts_by_id):
+        markdown = posts_by_id["106"].markdown
+        print(markdown)
+        assert 'behind this site, see [our About page]({{< ref "about" >}}).' in markdown
+
+    def test_missing_post_id_falls_back_to_source_slug(self, posts_by_id):
+        markdown = posts_by_id["102"].markdown
+        assert 'wrote up [an older gear post]({{< ref "posts/nonexistent-post" >}}) that' in markdown

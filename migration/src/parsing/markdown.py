@@ -3,14 +3,16 @@ from __future__ import annotations
 import html
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
+from urllib.parse import urlsplit
 
 import mdformat
 from bs4 import NavigableString, Tag
 from markdownify import MarkdownConverter
 
-from src.config import KEEP_CUSTOM_DIV_CLASSES
 from src.parsing.images import strip_wp_size_suffix
+from src.parsing.settings import ParseSettings
 from src.parsing.youtube import create_youtube_shortcode
 
 if TYPE_CHECKING:
@@ -50,6 +52,7 @@ class WPMarkdownConverter(MarkdownConverter):
         *args,
         post_id_to_slug: dict[str, str],
         media_by_id: dict[str, MediaObject],
+        parse_settings: ParseSettings | None = None,
         **kwargs,
     ):
         kwargs = {**MARKDOWNIFY_ARGS, **kwargs}  # use kwargs, fall back to default
@@ -57,18 +60,19 @@ class WPMarkdownConverter(MarkdownConverter):
 
         self.post_id_to_slug = post_id_to_slug
         self.media_by_id = media_by_id
+        self.parse_settings = parse_settings or ParseSettings()
 
         # collected as a side effect of conversion
         self.images: set[str] = set()
         self.videos: set[str] = set()
 
     def convert_img(self, el: Tag, text: str, parent_tags: set) -> str:
-        src = el.get("src", "")
-        alt = el.get("alt", "")
+        src: str = el.get("src", "")
+        alt: str = el.get("alt", "")
 
         # self linking images will have an <a> parent tag linking to the full resolution image
         if el.parent is not None and el.parent.name == "a":
-            href = el.parent.get("href", "")
+            href: str = el.parent.get("href", "")
             if strip_wp_size_suffix(href) == strip_wp_size_suffix(src):
                 src = href
 
@@ -81,7 +85,7 @@ class WPMarkdownConverter(MarkdownConverter):
         return f"<img {attrs}>\n"
 
     def convert_video(self, el: Tag, text: str, parent_tags: set) -> str:
-        src = el.get("src", "")
+        src: str = el.get("src", "")
         if src:
             self.videos.add(src)
 
@@ -104,8 +108,8 @@ class WPMarkdownConverter(MarkdownConverter):
         return f"<figcaption>\n\n{text.strip()}\n\n</figcaption>\n"
 
     def convert_a(self, el: Tag, text: str, parent_tags: set) -> str:
-        # Self-linking image: <a href="..."><img/></a> with nothing else inside. These
-        # are handled by `self.convert_img`, so no additional processing needed here.
+        # Self-linking image: <a href="..."><img/></a> with nothing else inside. We
+        # don't want to keep these links.
         children = [
             c
             for c in el.children
@@ -114,10 +118,31 @@ class WPMarkdownConverter(MarkdownConverter):
         if len(children) == 1 and getattr(children[0], "name", None) == "img":
             return text + "\n"
 
-        # relative links (identified via `data-type="post"` or `"page"`)
-        if el.get("data-type") in ["post", "page"]:
-            # el["href"] = ...  # TODO
-            ...
+        # relative links (identified via `data-type="post"` or `"page"`):
+        # get the relative path and render as Hugo `ref` shortcode
+        data_type = el.get("data-type")
+        if data_type in ["post", "page"]:
+            data_id: str = el.get("data-id", "")
+            href = str(el.get("href", ""))
+            parts = urlsplit(href)
+            try:
+                # if post ID has a known slug, use it
+                slug = self.post_id_to_slug[data_id.strip()]
+            except KeyError:
+                # fall back to the path in the href
+                slug = parts.path.lstrip("/")
+
+            if parts.fragment:
+                slug += f"#{parts.fragment}"
+
+            if data_type == "post":
+                prefix = self.parse_settings.posts_subdir
+            else:
+                prefix = self.parse_settings.pages_subdir
+
+            ref_path = str(Path(prefix) / Path(slug))
+            shortcode = f'{{{{< ref "{ref_path}" >}}}}'
+            el["href"] = shortcode
 
         return super().convert_a(el, text, parent_tags)
 
@@ -141,21 +166,18 @@ class WPMarkdownConverter(MarkdownConverter):
         cases:
 
         ### custom div classes ###
-        If a `<div>` has a class listed in `config.KEEP_CUSTOM_DIV_CLASSES`, keep it.
-        These custom div classes are used for formatting.
+        If a `<div>` has a class listed in `self.parse_settingskeep_div_classes`, keep
+        it. These custom div classes are used for formatting.
 
         ### embeds ###
         If the `<div>` has a "wp-block-embed__wrapper" class, it is an embedded URL. If
         it is a YouTube URL, convert to a Hugo shortcode. Otherwise convert to a
         hyperlink. (Note: generally, putting the exact URL in an <iframe> will not work;
         that's why we're leaving it as a hyperlink.)
-
-        Keep `<div>` tags with the specified classes in `KEEP_CUSTOM_DIV_CLASSES`;
-        otherwise strip them (normal `MarkdownConverter` behavior.)
         """
-        classes = el.get("class", [])
+        classes = set(el.get("class", []))
 
-        matched_classes = set(classes).intersection(set(KEEP_CUSTOM_DIV_CLASSES))
+        matched_classes = classes.intersection(self.parse_settings.keep_div_classes)
         if matched_classes:
             class_str = " ".join(matched_classes)
             return f'<div class="{class_str}">\n\n{text}\n</div>\n'
@@ -189,6 +211,7 @@ def content_to_markdown(
     footnotes_json: list[dict[str, str]],
     post_id_to_slug: dict[str, str],
     media_by_id: dict[str, MediaObject],
+    parse_settings: ParseSettings | None = None,
 ) -> MarkdownOutput:
     """Convert HTML content to Markdown."""
 
@@ -199,6 +222,7 @@ def content_to_markdown(
     converter = WPMarkdownConverter(
         post_id_to_slug=post_id_to_slug,
         media_by_id=media_by_id,
+        parse_settings=parse_settings,
     )
     markdown = converter.convert(html_content).strip()
     markdown = resolve_footnotes(

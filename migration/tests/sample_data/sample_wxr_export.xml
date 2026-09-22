@@ -328,7 +328,7 @@ https://www.youtube.com/watch?v=aqz-KE-bpKQ
 <!-- /wp:columns -->
 
 <!-- wp:paragraph -->
-<p>We also wrote up <a href="https://example.com/?p=9999" data-type="post" data-id="9999">an older gear teardown</a> that has since been deleted, so this link should resolve to nothing.</p>
+<p>We also wrote up <a href="https://example.com/nonexistent-post" data-type="post" data-id="9999">an older gear post</a> that has since been deleted, so this link should resolve to nothing.</p>
 <!-- /wp:paragraph -->
 ]]></content:encoded>
         <excerpt:encoded><![CDATA[<p>

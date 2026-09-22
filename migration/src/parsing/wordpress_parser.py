@@ -9,9 +9,9 @@ from typing import Literal
 
 from lxml import etree
 
-from src.config import AUTHOR_OVERRIDES
 from src.parsing.excerpts import parse_custom_excerpt
 from src.parsing.markdown import content_to_markdown
+from src.parsing.settings import ParseSettings
 from src.parsing.slugs import create_unique_slug
 
 
@@ -43,12 +43,14 @@ class Post:
         self,
         post_id_to_slug: dict[str, str],
         media_by_id: dict[str, MediaObject],
+        parse_settings: ParseSettings | None = None,
     ):
         result = content_to_markdown(
             html_content=self.raw_content,
             footnotes_json=self.footnotes_json,
             post_id_to_slug=post_id_to_slug,
             media_by_id=media_by_id,
+            parse_settings=parse_settings,
         )
         self.markdown: str = result.markdown
         self.images: set[str] = result.images
@@ -73,6 +75,7 @@ class MediaObject:
 class SiteContents:
     posts: list[Post]
     media: list[MediaObject]
+    parse_settings: ParseSettings | None = None
 
     def __post_init__(self):
         self._validate()
@@ -108,15 +111,18 @@ class SiteContents:
             post.generate_markdown(
                 post_id_to_slug=self.post_id_to_slug,
                 media_by_id=self.media_by_id,
+                parse_settings=self.parse_settings,
             )
 
 
 def parse_wordpress_xml(
     xml_path: Path,
-    skip_ids: list[str | int] = None,
+    parse_settings: ParseSettings | None = None,
 ) -> SiteContents:
-    skip_ids = skip_ids or []
-    skip_ids = [str(x) for x in skip_ids]
+    parse_settings = parse_settings or ParseSettings()
+
+    skip_ids = parse_settings.skip_ids
+    skip_ids = {str(x) for x in skip_ids}
     tree = etree.parse(str(xml_path))
     root = tree.getroot()
 
@@ -132,15 +138,24 @@ def parse_wordpress_xml(
 
         post_type = item.findtext("wp:post_type", namespaces=nsmap)
         if post_type in ("post", "page"):
-            posts.append(parse_post(item, nsmap))
+            p = parse_post(
+                item,
+                nsmap,
+                author_overrides=parse_settings.author_overrides,
+            )
+            posts.append(p)
         elif post_type == "attachment":
             media.append(parse_media_object(item, nsmap))
 
     logger.info(f"parsed {len(posts):,} posts/pages and {len(media):,} media files")
-    return SiteContents(posts=posts, media=media)
+    return SiteContents(posts=posts, media=media, parse_settings=parse_settings)
 
 
-def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
+def parse_post(
+    item: etree._Element,
+    nsmap: dict[str, str],
+    author_overrides: dict[str, str] | None = None,
+) -> Post:
     post_type = item.findtext("wp:post_type", namespaces=nsmap)
     status = item.findtext("wp:status", namespaces=nsmap)
     title = item.findtext("title")
@@ -157,7 +172,7 @@ def parse_post(item: etree._Element, nsmap: dict[str, str]) -> Post:
 
     slug = create_unique_slug(slug, used_slugs=USED_SLUGS)
 
-    author = _parse_authors(item, nsmap)
+    author = _parse_authors(item, nsmap, overrides=author_overrides)
     content = item.findtext("content:encoded", namespaces=nsmap)
     date = item.findtext("wp:post_date", namespaces=nsmap)
     categories = [cat.text for cat in item.findall("category[@domain='category']")]
@@ -199,9 +214,13 @@ def parse_media_object(item: etree._Element, nsmap: dict[str, str]) -> MediaObje
     return MediaObject(id_=id_, url=url, file_path=file_path)
 
 
-def _parse_authors(item: etree._Element, nsmap: dict[str, str]) -> str | list[str]:
+def _parse_authors(
+    item: etree._Element,
+    nsmap: dict[str, str],
+    overrides: dict[str, str] | None = None
+) -> str | list[str]:
     """Parse the author(s) from a WordPress XML item."""
-    overrides = AUTHOR_OVERRIDES
+    overrides = overrides or {}
     authors: list[str] = [x.text for x in item.findall("category[@domain='author']")]
     if not authors:
         # fallback to dc:creator

@@ -13,6 +13,7 @@ from pathlib import Path
 from lxml import etree
 
 from src import config
+from src.parsing.settings import ParseSettings
 from src.parsing.wordpress_parser import Post, parse_wordpress_xml
 
 logger = logging.getLogger(__name__)
@@ -25,9 +26,9 @@ def migrate(
     full_rebuild: bool = False,
 ):
     xml_path, target_dir = parse_paths(xml_name, target_dir_name)
-    skip_ids = config.SKIP_IDS
-    logger.info(f"Skipping posts with IDs: {skip_ids}")
-    posts = parse_wordpress_xml(xml_path, skip_ids=skip_ids)
+    settings = ParseSettings()
+    site_contents = parse_wordpress_xml(xml_path, parse_settings=settings)
+    posts = site_contents.posts
     logger.info(f"Parsed {len(posts):,} posts from {xml_path}")
 
     content_path = target_dir / "content"
@@ -113,7 +114,7 @@ if __name__ == "__main__":
         help="Overwrite existing files",
     )
     parser.add_argument(
-        "--full-rebuild", action="store_true", help="Perform full rebuild"
+        "--full-rebuild", action="store_true", default=False, help="Perform full rebuild",
     )
     parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 

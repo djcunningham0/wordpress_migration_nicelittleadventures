@@ -8,12 +8,33 @@ from src.parsing.markdown import (
     replace_footnote_markers_with_placeholders,
     resolve_footnotes,
 )
+from src.parsing.settings import ParseSettings
 
 import pytest
 
 
-def convert(html: str) -> MarkdownOutput:
-    return content_to_markdown(html, [], {}, {})
+def get_empty_settings() -> ParseSettings:
+    return ParseSettings(
+        skip_ids=set(),
+        author_overrides={},
+        keep_div_classes=set(),
+        posts_subdir="",
+        pages_subdir="",
+    )
+
+def convert(
+    html: str,
+    parse_settings: ParseSettings | None = None,
+    **kwargs,
+) -> MarkdownOutput:
+    parse_settings = parse_settings or get_empty_settings()
+    return content_to_markdown(
+        html_content=html,
+        footnotes_json=kwargs.get("footnotes_json", []),
+        post_id_to_slug=kwargs.get("post_id_to_slug", {}),
+        media_by_id=kwargs.get("media_by_id", {}),
+        parse_settings=parse_settings,
+    )
 
 
 # --------------------------------------------------------------------------
@@ -55,6 +76,65 @@ class TestBasics:
         result = convert("<h1>Title</h1>")
         assert result.markdown.startswith("# Title")
         assert "===" not in result.markdown
+
+
+# --------------------------------------------------------------------------
+# links
+# --------------------------------------------------------------------------
+
+
+class TestLinks:
+    def test_external_links_get_markdown_link(self):
+        html = '<a href="https://example.org">a link</a>'
+        assert convert(html).markdown == "[a link](https://example.org)"
+
+    def test_internal_links_get_ref_links(self):
+        post_id_to_slug = {"123": "actual-slug"}
+        html = '<a href="https://mysite.com/some-slug" data-type="post" data-id="123">a link</a>'
+        expected = '[a link]({{< ref "actual-slug" >}})'
+        out = convert(html, post_id_to_slug=post_id_to_slug)
+        out = out.markdown
+        assert out == expected
+
+    def test_internal_links_falls_back_to_original_slug(self):
+        post_id_to_slug = {}  # "123" is not listed
+        html = '<a href="https://mysite.com/some-slug" data-type="post" data-id="123">a link</a>'
+        expected = '[a link]({{< ref "some-slug" >}})'
+        out = convert(html, post_id_to_slug=post_id_to_slug)
+        out = out.markdown
+        assert out == expected
+
+    def test_internal_links_respects_posts_subdir(self):
+        settings = get_empty_settings()
+        settings.posts_subdir = "posts"
+        post_id_to_slug = {"123": "actual-slug"}
+        html = '<a href="https://mysite.com/some-slug" data-type="post" data-id="123">a link</a>'
+        expected = '[a link]({{< ref "posts/actual-slug" >}})'
+        out = convert(html, parse_settings=settings, post_id_to_slug=post_id_to_slug)
+        out = out.markdown
+        assert out == expected
+
+    def test_internal_links_respects_pages_subdir(self):
+        settings = get_empty_settings()
+        settings.pages_subdir = "pages"
+        post_id_to_slug = {"5": "some-page"}
+        html = '<a href="https://mysite.com/some-slug" data-type="page" data-id="5">a link</a>'
+        expected = '[a link]({{< ref "pages/some-page" >}})'
+        out = convert(html, parse_settings=settings, post_id_to_slug=post_id_to_slug)
+        out = out.markdown
+        assert out == expected
+
+    def test_external_link_keeps_fragment(self):
+        html = '<a href="https://example.org/page#fragment">a link</a>'
+        assert convert(html).markdown == "[a link](https://example.org/page#fragment)"
+
+    def test_internal_link_keeps_fragment(self):
+        post_id_to_slug = {"123": "actual-slug"}
+        html = '<a href="https://mysite.com/some-slug#fragment" data-type="post" data-id="123">a link</a>'
+        expected = '[a link]({{< ref "actual-slug#fragment" >}})'
+        out = convert(html, post_id_to_slug=post_id_to_slug)
+        out = out.markdown
+        assert out == expected
 
 
 # --------------------------------------------------------------------------
@@ -408,12 +488,16 @@ class TestQuotes:
 
 
 class TestAuthorDivs:
+
+    custom_div_classes = {"fixture-author-1", "fixture-author-2"}
+    parse_settings = ParseSettings(keep_div_classes=custom_div_classes)
+
     def test_exact_author_div_output(self):
         html = (
             '<div class="fixture-author-1"><p>One of us says a thing.</p></div>'
             '<div class="fixture-author-2"><p>The other says another thing.</p></div>'
         )
-        out = convert(html).markdown
+        out = convert(html, parse_settings=self.parse_settings).markdown
         expected = (
             '<div class="fixture-author-1">\n\n'
             "One of us says a thing.\n\n"
@@ -429,7 +513,7 @@ class TestAuthorDivs:
             '<div class="fixture-author-8"><p>One of us says a thing.</p></div>'
             '<div class="fixture-author-9"><p>The other says another thing.</p></div>'
         )
-        out = convert(html).markdown
+        out = convert(html, parse_settings=self.parse_settings).markdown
         expected = "One of us says a thing.\n\nThe other says another thing."
         assert out == expected
 
@@ -438,7 +522,7 @@ class TestAuthorDivs:
             '<div class="fixture-author-1"><p>One of us says a thing.</p></div>'
             '<div class="fixture-author-9"><p>Another sentence.</p></div>'
         )
-        out = convert(html).markdown
+        out = convert(html, parse_settings=self.parse_settings).markdown
         expected = (
             '<div class="fixture-author-1">\n\n'
             "One of us says a thing.\n\n"

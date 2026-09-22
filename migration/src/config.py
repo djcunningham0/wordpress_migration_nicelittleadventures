@@ -19,6 +19,8 @@ if XML_PATH is None:
 
 # Static site configuration
 HUGO_TARGET_DIR = ".."
+HUGO_POSTS_SUBDIR = "posts"  # relative to `content/`
+HUGO_PAGES_SUBDIR = ""  # relative to `content/`
 
 # -------------------------------
 # Wordpress site info
@@ -31,21 +33,21 @@ WP_MEDIA_DIR = "https://nicelittleadventures.com/wp-content/uploads"
 # Migration settings
 # -------------------------------
 
-SKIP_IDS = [
-    2,  # Posts
-    7,  # Contact
-    3958,  # "do not delete" page
-    1104,  # MailPoet subscription
-    1693,  # MailPoet confirmation
-    2286,  # Home
-]
+SKIP_IDS = {
+    "2",  # Posts
+    "7",  # Contact
+    "3958",  # "do not delete" page
+    "1104",  # MailPoet subscription
+    "1693",  # MailPoet confirmation
+    "2286",  # Home
+}
 
 # keep `<div>` tags with these classes when converting HTML to markdown (normally,
 # `<div>` tags are stripped out)
-KEEP_CUSTOM_DIV_CLASSES = [
+KEEP_CUSTOM_DIV_CLASSES = {
     "author-danny",
     "author-siyang",
     "author-sean",
-]
+}
 
 AUTHOR_OVERRIDES = {"siyangsun": "Siyang"}
