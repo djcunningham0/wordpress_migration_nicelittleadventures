@@ -49,8 +49,11 @@ def migrate(
 
         os.makedirs(post_dir, exist_ok=True)
         post_file_path = post_dir / "index.md"
-        if post_file_path.exists() and not overwrite_individual:
-            logger.info(f"Skipping existing file: {post_file_path}")
+        if post_file_path.exists():
+            if overwrite_individual:
+                shutil.rmtree(post_file_path)
+            else:
+                logger.info(f"Skipping existing file: {post_file_path}")
             continue
 
         with open(post_file_path, "w", encoding="utf-8") as f:
