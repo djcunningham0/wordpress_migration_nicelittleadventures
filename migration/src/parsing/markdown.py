@@ -177,15 +177,30 @@ class WPMarkdownConverter(MarkdownConverter):
         return super().convert_a(el, text, parent_tags)
 
     def convert_figure(self, el: Tag, text: str, parent_tags: set) -> str:
-        """Keep `<figure>` tags if there are any images, videos, or figcaptions in them.
-        Otherwise fall back to default behavior (strip `<figure>` tags.)
+        """Keep `<figure>` tags if they contain any class specified in
+        `self.parse_settings.keep_class_map["figure"]`, OR if there are any images,
+        videos, or figcaptions in them. Otherwise fall back to default behavior (strip
+        `<figure>` tags.)
 
         Note: include double new lines so Hugo interprets the inner part as markdown,
         not HTML.
         """
+        # if there are any matched classes in `keep_class_map`, return the <figure> tag
+        # with those classes
+        classes = set(el.get("class", []))
+        keep_class_map = self.parse_settings.keep_class_map.get("figure", {})
+        matched_classes = classes.intersection(keep_class_map)
+        if matched_classes:
+            renamed_classes = {keep_class_map[x] for x in matched_classes}
+            class_str = " ".join(renamed_classes)
+            return f'<figure class="{class_str}">\n\n{text}\n</figure>\n'
+
+        # if there are any images, videos, or captions inside the <figure> tag, keep it
         child_types = {x.name for x in el.find_all()}
         if any(x in child_types for x in ["img", "video", "figcaption"]):
             return f"<figure>\n\n{text.strip()}\n\n</figure>\n"
+
+        # otherwise, strip the <figure> tag
         return text + "\n"
 
     def convert_iframe(self, el: Tag, text: str, parent_tags: set) -> str:
@@ -195,9 +210,9 @@ class WPMarkdownConverter(MarkdownConverter):
         """In general, strip `<div>` tags. But apply special processing to the following
         cases:
 
-        ### custom div classes ###
-        If a `<div>` has a class listed in `self.parse_settingskeep_div_classes`, keep
-        it. These custom div classes are used for formatting.
+        ### kept div classes ###
+        If a `<div>` has a class listed in `self.parse_settings.keep_class_map["div"]`,
+        keep it. These custom div classes are used for formatting.
 
         ### embeds ###
         If the `<div>` has a "wp-block-embed__wrapper" class, it is an embedded URL. If
@@ -211,11 +226,14 @@ class WPMarkdownConverter(MarkdownConverter):
         classes = set(el.get("class", []))
 
         ### custom div classes
-        matched_classes = classes.intersection(self.parse_settings.keep_div_classes)
+        keep_class_map = self.parse_settings.keep_class_map.get("div", {})
+        matched_classes = classes.intersection(keep_class_map)
         if matched_classes:
-            class_str = " ".join(matched_classes)
+            renamed_classes = {keep_class_map[x] for x in matched_classes}
+            class_str = " ".join(renamed_classes)
             return f'<div class="{class_str}">\n\n{text}\n</div>\n'
 
+        ### embeds
         if "wp-block-embed__wrapper" in classes:
             # youtube is straightforward to handle: rely on the Hugo shortcode
             if "is-provider-youtube" in el.parent.get("class", []):
@@ -227,6 +245,7 @@ class WPMarkdownConverter(MarkdownConverter):
                 hyperlink.string = el.text.strip()
                 return super().convert_a(hyperlink, hyperlink.text, {})
 
+        ### other known edge cases
         if "strava-embed-placeholder" in classes:
             return f"{el}\n"
 

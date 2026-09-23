@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime
 import json
 import logging
-import tomli_w
 import warnings
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
+import tomli_w
 from lxml import etree
 
 from src.parsing.excerpts import parse_custom_excerpt
@@ -41,7 +41,7 @@ class Post:
         self.is_draft: bool = self.status in ["draft", "pending"]
         self.subtitle, self.excerpt = parse_custom_excerpt(self._raw_excerpt)
         try:
-            dt = datetime.strptime(self._raw_date, "%Y-%m-%d %H:%M:%S")
+            dt = datetime.strptime(self._raw_date, "%Y-%m-%d %H:%M:%S")  # noqa: DTZ007
             self.date = dt.strftime("%Y-%m-%d")
         except ValueError:
             logger.warning(

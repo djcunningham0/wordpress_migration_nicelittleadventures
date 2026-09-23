@@ -16,7 +16,7 @@ def get_empty_settings() -> ParseSettings:
     return ParseSettings(
         skip_ids=set(),
         author_overrides={},
-        keep_div_classes=set(),
+        keep_class_map={},
         posts_subdir="",
         pages_subdir="",
     )
@@ -172,6 +172,26 @@ class TestFigures:
         )
         assert out == expected
 
+    def test_keep_figure_with_specified_class(self):
+        class_map = {"figure": {"some-class": "renamed-class"}}
+        settings = get_empty_settings()
+        settings.keep_class_map = class_map
+        html = '<figure class="some-class"><img src="image.jpg"></figure>'
+        out = convert(html, parse_settings=settings).markdown
+        expected = (
+            '<figure class="renamed-class">\n\n<img src="image.jpg">\n\n</figure>'
+        )
+        assert out == expected
+
+    def test_keep_figure_with_specified_class_without_image(self):
+        class_map = {"figure": {"some-class": "renamed-class"}}
+        settings = get_empty_settings()
+        settings.keep_class_map = class_map
+        html = '<figure class="some-class"><p>some text</p></figure>'
+        out = convert(html, parse_settings=settings).markdown
+        expected = '<figure class="renamed-class">\n\nsome text\n\n</figure>'
+        assert out == expected
+
 
 class TestFigcaption:
     def test_two_newlines_around_figcaption(self):
@@ -266,33 +286,6 @@ class TestImages:
         expected = '<img src="ridge.jpg">'
         assert out.markdown == expected
         assert out.media_paths == {"2023/08/ridge.jpg"}
-
-
-# --------------------------------------------------------------------------
-# columns
-# --------------------------------------------------------------------------
-
-
-def _columns(*column_inner: str, widths: list[str] | None = None) -> str:
-    cols = []
-    for i, inner in enumerate(column_inner):
-        if widths:
-            cols.append(
-                f'<div class="wp-block-column" style="flex-basis:{widths[i]}">{inner}</div>'
-            )
-        else:
-            cols.append(f'<div class="wp-block-column">{inner}</div>')
-    return '<div class="wp-block-columns">' + "".join(cols) + "</div>"
-
-
-IMG_A = '<figure class="wp-block-image"><img src="https://example.com/a.jpg" alt="A"/></figure>'
-IMG_B = '<figure class="wp-block-image"><img src="https://example.com/b.jpg" alt="B"/></figure>'
-
-
-class TestColumns:
-    @pytest.mark.xfail()
-    def test_columns_TODO(self):
-        assert False
 
 
 # --------------------------------------------------------------------------
@@ -500,11 +493,19 @@ class TestQuotes:
 # --------------------------------------------------------------------------
 
 
-class TestAuthorDivs:
+class TestDivs:
     @property
     def parse_settings(self):
-        custom_div_classes = {"fixture-author-1", "fixture-author-2"}
-        return ParseSettings(keep_div_classes=custom_div_classes)
+        keep_class_map = {
+            "div": {
+                "fixture-author-1": "fixture-author-1",
+                "fixture-author-2": "fixture-author-2",
+                "wp-block-columns": "img-row",
+            }
+        }
+        settings = get_empty_settings()
+        settings.keep_class_map = keep_class_map
+        return settings
 
     def test_exact_author_div_output(self):
         html = (
@@ -542,6 +543,58 @@ class TestAuthorDivs:
             "One of us says a thing.\n\n"
             "</div>\n\n"
             "Another sentence."
+        )
+        assert out == expected
+
+    def test_specified_divs_are_renamed(self):
+        html = (
+            '<div class="wp-block-columns">'
+            '<div class="wp-block-column">'
+            "<p>some text</p>"
+            "</div>"
+            "</div>"
+        )
+        out = convert(html, parse_settings=self.parse_settings).markdown
+        expected = '<div class="img-row">\n\nsome text\n\n</div>'
+        assert out == expected
+
+
+# --------------------------------------------------------------------------
+# columns
+# --------------------------------------------------------------------------
+
+
+class TestColumns:
+    def test_columns(self):
+        keep_class_map = {"div": {"wp-block-columns": "img-row"}}
+        settings = get_empty_settings()
+        settings.keep_class_map = keep_class_map
+        html = (
+            '<div class="wp-block-columns">'
+            '<div class="wp-block-column" style="flex-basis:66.67%">'
+            '<figure class="wp-block-image">'
+            '<img src="image.jpg">'
+            "<figcaption>a caption</figcaption>"
+            "</figure>"
+            "</div>"
+            '<div class="wp-block-column" style="flex-basis:33.33%">'
+            '<figure class="wp-block-image">'
+            '<img src="image2.jpg">'
+            "</figure>"
+            "</div>"
+            "</div>"
+        )
+        out = convert(html, parse_settings=settings).markdown
+        expected = (
+            '<div class="img-row">\n\n'
+            "<figure>\n\n"
+            '<img src="image.jpg">\n'
+            "<figcaption>\n\na caption\n\n</figcaption>\n\n"
+            "</figure>\n\n"
+            "<figure>\n\n"
+            '<img src="image2.jpg">\n\n'
+            "</figure>\n\n"
+            "</div>"
         )
         assert out == expected
 

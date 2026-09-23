@@ -12,7 +12,13 @@ SAMPLE_XML = DATA_DIR / "sample_wxr_export.xml"
 TEST_PARSE_SETTINGS = ParseSettings(
     skip_ids=set(),
     author_overrides={},
-    keep_div_classes={"fixture-author-1", "fixture-author-2"},
+    keep_class_map={
+        "div": {
+            "fixture-author-1": "fixture-author-1",
+            "fixture-author-2": "fixture-author-2",
+            "wp-block-columns": "img-row",
+        },
+    },
     posts_subdir="posts",
     pages_subdir="",
 )

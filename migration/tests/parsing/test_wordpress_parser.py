@@ -250,3 +250,14 @@ class TestFeaturedImages:
     def test_featured_image_is_in_media_paths(self, posts_by_id):
         p = posts_by_id["101"]
         assert "2023/08/sawtooth-hero.jpg" in p.media_paths
+
+
+# --------------------------------------------------------------------------
+# images in columns
+# --------------------------------------------------------------------------
+
+
+class TestColumns:
+    def test_columns(self, posts_by_id):
+        markdown = posts_by_id["101"].markdown
+        assert '<div class="img-row">\n\n<figure>\n\n<img src=' in markdown

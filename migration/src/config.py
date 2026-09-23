@@ -35,12 +35,20 @@ SKIP_IDS = {
     "2286",  # Home
 }
 
-# keep `<div>` tags with these classes when converting HTML to markdown (normally,
-# `<div>` tags are stripped out)
-KEEP_CUSTOM_DIV_CLASSES = {
-    "author-danny",
-    "author-siyang",
-    "author-sean",
+# keep these classes in tags and optionally rename them (and prevent the tag from being
+# stripped by the markdown conversion if it normally would be)
+KEEP_HTML_CLASSES = {
+    # tag: {source_class: renamed_class}
+    "div": {
+        "author-danny": "author-danny",
+        "author-siyang": "author-siyang",
+        "author-sean": "author-sean",
+        "alignwide": "alignwide",
+        "wp-block-columns": "img-row",
+    },
+    "figure": {
+        "alignwide": "alignwide",
+    },
 }
 
 AUTHOR_OVERRIDES = {"siyangsun": "Siyang"}
