@@ -130,12 +130,11 @@ class WPMarkdownConverter(MarkdownConverter):
         return f"<video {attrs}></video>\n"
 
     def convert_figcaption(self, el: Tag, text: str, parent_tags: set) -> str:
-        """Keep `<figcaption>` tags so they can be formatted with CSS.
-
-        Note: include double new lines so Hugo interprets the inner part as markdown,
-        not HTML.
-        """
-        return f"<figcaption>\n\n{text.strip()}\n\n</figcaption>\n"
+        """Keep `<figcaption>` tags so they can be formatted with CSS."""
+        inner = text.strip()
+        if any(x in text for x in ["_", "*", "[", "~", "^", "`", "{{<", "{{%", "$"]):
+            inner = "\n\n" + inner + "\n\n"
+        return f"<figcaption>{inner}</figcaption>\n"
 
     def convert_a(self, el: Tag, text: str, parent_tags: set) -> str:
         # Self-linking image: <a href="..."><img/></a> with nothing else inside. We
@@ -341,5 +340,7 @@ def resolve_footnotes(
 
 
 def prettify_markdown(text: str) -> str:
-    out = re.sub(r"\n{3,}", "\n\n", text)  # collapse 3+ newlines to 2
+    out = text
+    out = re.sub(r"\n{3,}", "\n\n", out)  # collapse 3+ newlines to 2
+    out = re.sub(r">\s*\n\s*<", ">\n<", out)  # remove newlines between HTML tags
     return out

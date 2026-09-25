@@ -168,7 +168,6 @@ class TestImages:
     def test_images_linked_to_file(self, posts_by_id):
         p = posts_by_id["101"]
         markdown = p.markdown
-        print(markdown)
         assert '<img src="sawtooth-ridge.jpg">' in markdown
         assert '<img src="sawtooth-ridge.jpg" alt="Ridgeline at dawn">' in markdown
         assert '<img src="alpine-lake.jpg" alt="Alpine lake">' in markdown
@@ -224,7 +223,6 @@ class TestLinks:
 
     def test_post_to_page_internal_link(self, posts_by_id):
         markdown = posts_by_id["106"].markdown
-        print(markdown)
         assert (
             'behind this site, see [our About page]({{< ref "about" >}}).' in markdown
         )
@@ -260,4 +258,4 @@ class TestFeaturedImages:
 class TestColumns:
     def test_columns(self, posts_by_id):
         markdown = posts_by_id["101"].markdown
-        assert '<div class="img-row">\n\n<figure>\n\n<img src=' in markdown
+        assert '<div class="img-row">\n<figure>\n<img src=' in markdown

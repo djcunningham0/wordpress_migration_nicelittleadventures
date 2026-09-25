@@ -143,18 +143,18 @@ class TestLinks:
 
 
 class TestFigures:
-    def test_keep_figure_with_two_newlines_around_img(self):
+    def test_keep_figure_around_img(self):
         html = '<figure><img src="https://example.com/a.jpg"></figure>'
         out = convert(html).markdown
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>'
+        expected = '<figure>\n<img src="https://example.com/a.jpg">\n</figure>'
         assert out == expected
 
-    def test_keep_figure_with_two_newlines_around_video(self):
+    def test_keep_figure_around_video(self):
         html = (
             '<figure><video controls src="https://example.com/a.mov"></video></figure>'
         )
         out = convert(html).markdown
-        expected = '<figure>\n\n<video controls src="https://example.com/a.mov"></video>\n\n</figure>'
+        expected = '<figure>\n<video controls src="https://example.com/a.mov"></video>\n</figure>'
         assert out == expected
 
     def test_strip_figure_with_no_relevant_tags(self):
@@ -165,10 +165,7 @@ class TestFigures:
         html = "<figure><p>some text</p><figcaption>and a caption</figcaption></figure>"
         out = convert(html).markdown
         expected = (
-            "<figure>\n\n"
-            "some text\n\n"
-            "<figcaption>\n\nand a caption\n\n</figcaption>\n\n"
-            "</figure>"
+            "<figure>\n\nsome text\n\n<figcaption>and a caption</figcaption>\n</figure>"
         )
         assert out == expected
 
@@ -178,9 +175,7 @@ class TestFigures:
         settings.keep_class_map = class_map
         html = '<figure class="some-class"><img src="image.jpg"></figure>'
         out = convert(html, parse_settings=settings).markdown
-        expected = (
-            '<figure class="renamed-class">\n\n<img src="image.jpg">\n\n</figure>'
-        )
+        expected = '<figure class="renamed-class">\n<img src="image.jpg">\n</figure>'
         assert out == expected
 
     def test_keep_figure_with_specified_class_without_image(self):
@@ -194,22 +189,25 @@ class TestFigures:
 
 
 class TestFigcaption:
-    def test_two_newlines_around_figcaption(self):
+    def test_no_newlines_around_figcaption(self):
         html = "<figcaption>some text</figcaption>"
-        assert convert(html).markdown == "<figcaption>\n\nsome text\n\n</figcaption>"
+        assert convert(html).markdown == "<figcaption>some text</figcaption>"
 
-    def test_figcaption_text_is_converted_to_markdown(self):
-        html = (
-            "<figcaption>"
-            'some <strong>bold</strong> and <em>italic</em> text with a <a href="https://example.com">link</a>'
-            "</figcaption>"
-        )
+    @pytest.mark.parametrize(
+        "html_str, markdown_str",
+        [
+            ("<strong>bold</strong>", "**bold**"),
+            ("<em>italic</em>", "*italic*"),
+            ("<s>strikethrough</s>", "~~strikethrough~~"),
+            ("<code>code</code>", "`code`"),
+            ('<a href="https://example.com">link</a>', "[link](https://example.com)"),
+            ("{{< shortcode >}}", "{{< shortcode >}}"),
+        ],
+    )
+    def test_two_newlines_around_figcaption_with_markdown(self, html_str, markdown_str):
+        html = f"<figcaption>some {html_str} text</figcaption>"
+        expected = f"<figcaption>\n\nsome {markdown_str} text\n\n</figcaption>"
         out = convert(html).markdown
-        expected = (
-            "<figcaption>\n\n"
-            "some **bold** and *italic* text with a [link](https://example.com)\n\n"
-            "</figcaption>"
-        )
         assert out == expected
 
 
@@ -226,7 +224,7 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg">\n\n</figure>'
+        expected = '<figure>\n<img src="https://example.com/a.jpg">\n</figure>'
         assert out.markdown == expected
 
     def test_alt_text_is_preserved(self):
@@ -236,7 +234,9 @@ class TestImages:
             "</figure>"
         )
         out = convert(html)
-        expected = '<figure>\n\n<img src="https://example.com/a.jpg" alt="Alt text">\n\n</figure>'
+        expected = (
+            '<figure>\n<img src="https://example.com/a.jpg" alt="Alt text">\n</figure>'
+        )
         assert out.markdown == expected
 
     def test_image_keeps_caption(self):
@@ -248,9 +248,9 @@ class TestImages:
         )
         out = convert(html)
         assert out.markdown == (
-            "<figure>\n\n"
+            "<figure>\n"
             '<img src="https://example.com/a.jpg">\n'
-            "<figcaption>\n\nA caption.\n\n</figcaption>\n\n"
+            "<figcaption>A caption.</figcaption>\n"
             "</figure>"
         )
 
@@ -264,8 +264,8 @@ class TestImages:
         )
         out = convert(self_linking_image).markdown
         expected = (
-            "<figure>\n\n"
-            '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg">\n\n'
+            "<figure>\n"
+            '<img src="https://example.com/wp-content/uploads/2023/08/ridge.jpg">\n'
             "</figure>"
         )
         assert out == expected
@@ -323,9 +323,9 @@ class TestEmbeds:
         )
         out = convert(html).markdown
         expected = (
-            "<figure>\n\n"
+            "<figure>\n"
             '<iframe src="https://caltopo.com/m/ABC123"></iframe>\n'
-            "<figcaption>\n\na caption\n\n</figcaption>\n\n"
+            "<figcaption>a caption</figcaption>\n"
             "</figure>"
         )
         assert out == expected
@@ -338,8 +338,8 @@ class TestEmbeds:
         )
         out = convert(html)
         assert out.markdown == (
-            "<figure>\n\n"
-            '<video controls src="https://example.com/flyover.mp4"></video>\n\n'
+            "<figure>\n"
+            '<video controls src="https://example.com/flyover.mp4"></video>\n'
             "</figure>"
         )
 
@@ -370,7 +370,7 @@ class TestEmbeds:
         expected = (
             "<figure>\n\n"
             "{{< youtube PoIngwoBW-Q >}}\n"
-            "<figcaption>\n\nView from afar of their line... they got stuck a few times\n\n</figcaption>\n\n"
+            "<figcaption>View from afar of their line... they got stuck a few times</figcaption>\n"
             "</figure>"
         )
         assert out == expected
@@ -456,7 +456,7 @@ class TestTables:
             "| ----- | ------------ |\n"
             "| x     | y            |\n"
             "| z     | longer value |\n"
-            "<figcaption>\n\na caption\n\n</figcaption>\n\n"
+            "<figcaption>a caption</figcaption>\n"
             "</figure>"
         )
         out = convert(html).markdown
@@ -586,14 +586,14 @@ class TestColumns:
         )
         out = convert(html, parse_settings=settings).markdown
         expected = (
-            '<div class="img-row">\n\n'
-            "<figure>\n\n"
+            '<div class="img-row">\n'
+            "<figure>\n"
             '<img src="image.jpg">\n'
-            "<figcaption>\n\na caption\n\n</figcaption>\n\n"
-            "</figure>\n\n"
-            "<figure>\n\n"
-            '<img src="image2.jpg">\n\n'
-            "</figure>\n\n"
+            "<figcaption>a caption</figcaption>\n"
+            "</figure>\n"
+            "<figure>\n"
+            '<img src="image2.jpg">\n'
+            "</figure>\n"
             "</div>"
         )
         assert out == expected
@@ -756,3 +756,8 @@ class TestPrettifyMarkdown:
         )
         out = prettify_markdown(markdown)
         assert out == expected
+
+    def test_removes_double_newline_between_html(self):
+        text = "<p>text</p>\n\n<p>more text</p>"
+        out = prettify_markdown(text)
+        assert out == "<p>text</p>\n<p>more text</p>"
