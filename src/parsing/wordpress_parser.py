@@ -41,12 +41,11 @@ class Post:
         self.is_draft: bool = self.status in ["draft", "pending"]
         self.subtitle, self.excerpt = parse_custom_excerpt(self._raw_excerpt)
         try:
-            dt = datetime.strptime(self._raw_date, "%Y-%m-%d %H:%M:%S")  # noqa: DTZ007
+            dt = datetime.strptime(self._raw_date, "%Y-%m-%d %H:%M:%S")
             self.date = dt.strftime("%Y-%m-%d")
         except ValueError:
             logger.warning(
-                "Failed to parse raw date %s as 'yyyy-mm-dd hh:mm:ss' format; leaving "
-                "as raw value",
+                "Failed to parse raw date %s as 'yyyy-mm-dd hh:mm:ss' format; leaving as raw value",
                 self._raw_date,
             )
 
@@ -226,7 +225,8 @@ def parse_post(
         slug = title  # example: draft posts don't have slugs
     if not slug:
         warnings.warn(
-            f"Found empty slug for post {id_}. Generating a new slug with root 'empty-slug"
+            f"Found empty slug for post {id_}. Generating a new slug with root 'empty-slug",
+            stacklevel=2,
         )
         slug = "empty-slug"
 
@@ -243,10 +243,7 @@ def parse_post(
         "wp:postmeta[wp:meta_key='footnotes']/wp:meta_value",
         namespaces=nsmap,
     )
-    if footnotes_json:
-        footnotes_json = json.loads(footnotes_json)
-    else:
-        footnotes_json = []
+    footnotes_json = json.loads(footnotes_json) if footnotes_json else []
 
     featured_image_id = item.findtext(
         "wp:postmeta[wp:meta_key='_thumbnail_id']/wp:meta_value",

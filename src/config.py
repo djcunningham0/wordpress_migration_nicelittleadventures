@@ -15,7 +15,7 @@ XML_PATH = os.getenv("XML_PATH")  # XML export location in local filesystem
 MEDIA_DIR = "./wp_migration_files/uploads"  # media export directory in local filesystem
 
 if XML_PATH is None:
-    warnings.warn("XML_PATH is not set in `.env`")
+    warnings.warn("XML_PATH is not set in `.env`", stacklevel=2)
 
 # Targets (static site configuration)
 HUGO_TARGET_DIR = ".."

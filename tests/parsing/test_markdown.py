@@ -338,9 +338,7 @@ class TestEmbeds:
         )
         out = convert(html)
         assert out.markdown == (
-            "<figure>\n"
-            '<video controls src="https://example.com/flyover.mp4"></video>\n'
-            "</figure>"
+            '<figure>\n<video controls src="https://example.com/flyover.mp4"></video>\n</figure>'
         )
 
     def test_youtube_embed_is_converted_to_hugo_shortcode(self):
@@ -606,10 +604,7 @@ class TestColumns:
 
 def sup(fn_id: str, n: int = 1) -> str:
     """A footnote marker in the shape WordPress actually emits."""
-    return (
-        f'<sup data-fn="{fn_id}" class="fn">'
-        f'<a href="#{fn_id}" id="{fn_id}-link">{n}</a></sup>'
-    )
+    return f'<sup data-fn="{fn_id}" class="fn"><a href="#{fn_id}" id="{fn_id}-link">{n}</a></sup>'
 
 
 class TestFootnotes:
@@ -743,17 +738,7 @@ class TestPrettifyMarkdown:
             "\n\n\n\n\n\n\n\n\n"
             "Last line."
         )
-        expected = (
-            "Line 1."
-            "\n\n"
-            "Line 2. Two sentences."
-            "\n\n"
-            "Line 3."
-            "\n"
-            "Continuation of line 3"
-            "\n\n"
-            "Last line."
-        )
+        expected = "Line 1.\n\nLine 2. Two sentences.\n\nLine 3.\nContinuation of line 3\n\nLast line."
         out = prettify_markdown(markdown)
         assert out == expected
 

@@ -6,7 +6,6 @@ From the `migration/` directory:
 
 import argparse
 import logging
-import os
 import shutil
 from pathlib import Path
 
@@ -54,10 +53,10 @@ def migrate(
                 logger.info(f"Skipping existing post: {post_dir}")
                 continue
 
-        os.makedirs(post_dir, exist_ok=True)
+        post_dir.mkdir(parents=True, exist_ok=True)
 
         post_file_path = post_dir / "index.md"
-        with open(post_file_path, "w", encoding="utf-8") as f:
+        with post_file_path.open("w", encoding="utf-8") as f:
             f.write(post.markdown)
         logger.info(f"Wrote {post_file_path}")
 
@@ -106,7 +105,7 @@ def parse_xml_file(xml_path: Path) -> etree._ElementTree:
         tree = etree.parse(str(xml_path))
         return tree
     except etree.XMLSyntaxError as e:
-        raise ValueError(f"Failed to parse XML file at {xml_path}: {e}")
+        raise ValueError(f"Failed to parse XML file at {xml_path}: {e}") from e
 
 
 if __name__ == "__main__":

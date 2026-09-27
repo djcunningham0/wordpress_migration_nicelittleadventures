@@ -22,4 +22,35 @@ dev = [
 ]
 
 [tool.ruff]
+line-length = 88
+target-version = "py313"
 extend-exclude = ["*.ipynb"]
+
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort (import sorting)
+    "UP",     # pyupgrade (modernize syntax)
+    "B",      # flake8-bugbear (common bugs/footguns)
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+    "RUF",    # ruff-specific rules
+    "PTH",    # flake8-use-pathlib
+    "N",      # pep8-naming
+]
+ignore = [
+    "E501",   # line too long (let the formatter handle it)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]  # allow asserts in tests
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
