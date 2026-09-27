@@ -18,7 +18,7 @@ if XML_PATH is None:
     warnings.warn("XML_PATH is not set in `.env`", stacklevel=2)
 
 # Targets (static site configuration)
-HUGO_TARGET_DIR = ".."
+HUGO_TARGET_DIR = "../nicelittleadventures.com"
 HUGO_POSTS_SUBDIR = "posts"  # relative to `content/`
 HUGO_PAGES_SUBDIR = ""  # relative to `content/`
 
