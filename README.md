@@ -1,8 +1,9 @@
 # migration
 
-This was originally a WordPress site.
-The code in this `migration/` directory converts the WordPress site (from an XML export) to a static site structure (specifically, for use with [Hugo](https://gohugo.io)).
-It extracts posts and pages from the WordPress export, convert them to Hugo-compatible markdown files, and place the markdown files and corresponding images in the correct directories to build the static site.
+[nicelittleadventures.com](https://nicelittleadventures.com) was originally a WordPress site, and I switched it to a static site (built with [Hugo](https://gohugo.io)).
+I used the code in this repo to do the bulk of the migration.
+It extracts the content and metadata from each post and page on the WordPress site (from an XML export), converts it to markdown, and then places that markdown file into the correct subdirectory for the static site.
+It also places copies of the image files for each post alongside the markdown (`index.md`) files.
 
 **Note:** this is _**not**_ just a trivial HTML-to-markdown converter.
 The output markdown files are a mix of markdown syntax, raw HTML, and Hugo shortcodes.
@@ -14,16 +15,15 @@ Some examples:
 
 ## basic usage
 
-_Note: I recommend using uv, but it's not strictly necessary.`
+_Note: I recommend using uv, but it's not strictly necessary._
 
 ```bash
-# run from the `migration/` directory
 uv run python -m src.migrate
 ```
 
 ## pre-requisites
 
-The following must exist in the `wp_migration/` subdirectory:
+The following must exist in the `wp_migration/` directory:
 - The WordPress site XML export (e.g., mysite.WordPress.2026-09-23.xml`)
 - A directory with the contents of `public_html/wp-content/uploads/` on the WordPress site (i.e., all of the media files)
 
@@ -45,4 +45,3 @@ Important files are noted in **bold.**
   - **`migrate.py`: Entry point.** Parse all posts and pages, then write markdown files and copy all media files to the appropriate location.
 - `tests/`: unit tests, mirroring the structure of `src/`
 - `wp_migration_files/`: See "pre-requisites" section above
-- 
